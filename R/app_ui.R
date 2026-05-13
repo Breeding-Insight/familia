@@ -12,6 +12,15 @@ app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
+    # Dynamic sidebar color theme — only sets the :root CSS variables
+    # ── Sidebar color theme ──────────────────────────────────────────────────────
+    # Change this value to switch the active sidebar menu item color.
+    # Available options: "azure", "green", "yellow", "grey", "purple", "red"
+    # ─────────────────────────────────────────────────────────────────────────────
+    tags$head(tags$style(HTML(sprintf(
+      ":root { --sidebar-core: var(--%s-core); --sidebar-lite: var(--%s-lite); --sidebar-deep: var(--%s-deep); }",
+      "green", "green", "green"
+    )))),
     # Your application UI logic
     bs4DashPage(
       skin = "black",
@@ -55,13 +64,13 @@ app_ui <- function(request) {
           flat = FALSE,
           tags$li(class = "header", style = "color: grey; margin-top: 10px; margin-bottom: 10px; padding-left: 15px;", "Menu"),
                    menuItem("Home", tabName = "welcome", icon = icon("house"),startExpanded = FALSE),
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Unsupervised"),
-                   menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Supervised"),
-                   menuItem("PolyBreedTools", tabName = "polybreedtools", icon = icon("share-from-square")),
-                   menuItem("Genomic Diversity", tabName = "diversity", icon = icon("chart-pie")),
+          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Pedigree & Parentage"),
+                  menuItem("Pedigree Cleaner", tabName = "ped_cleaner", icon = icon("sitemap")),
+          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Breed/Line Composition"),
+                  menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
+                  menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
-          menuItem("Source Code", icon = icon("circle-info"), href = "https://www.github.com/Breeding-Insight/Genomics_Shiny_App"),
+          menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
           #menuItem(
           #  span("Job Queue", bs4Badge("demo", position = "right", color = "warning")),
           #  tabName = "slurm",
@@ -113,13 +122,13 @@ app_ui <- function(request) {
             tabName = "welcome", mod_Home_ui("Home_1")
           ),
           tabItem(
+            tabName = "ped_cleaner", mod_ped_cleaner_ui("ped_cleaner_1")   # ADD THIS
+          ),
+          tabItem(
             tabName = "polybreedtools", mod_polybreedtools_ui("PolyBreedTools_1")
           ),
           tabItem(
             tabName = "snmf", mod_SNMF_ui("SNMF_1")
-          ),
-          tabItem(
-            tabName = "diversity", mod_diversity_ui("diversity_1")
           ),
           tabItem(
             tabName = "help", mod_help_ui("help_1")
@@ -143,14 +152,33 @@ golem_add_external_resources <- function() {
     "www",
     app_sys("app/www")
   )
-
+  
   tags$head(
     favicon(),
     bundle_resources(
       path = app_sys("app/www"),
       app_title = "familia"
-    )
+    ),
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
+    tags$style(HTML("
+      /* Ensure box collapse/expand buttons are always on top */
+      .card-tools { position: relative; z-index: 10; }
+      /* Make collapse/expand icons visible on white box headers */
+      .card-tools .btn-tool { color: #495057 !important; }
+      .card-tools .btn-tool:hover { color: #212529 !important; }
+    ")),
+    tags$script(HTML("
+      $(document).ready(function() {
+        // On page load: mirror active class from <li> onto <a> for CSS targeting
+        $('#cnv_1-sample_select_tabs li.active > a').addClass('active');
+
+        // After each tab switch (content already swapped): sync active on <a> only
+        $(document).on('shown.bs.tab', '#cnv_1-sample_select_tabs a[data-toggle=\"tab\"]', function(e) {
+          $('#cnv_1-sample_select_tabs a[data-toggle=\"tab\"]').removeClass('active');
+          $(e.target).addClass('active');
+        });
+      });
+    "))
   )
 }
