@@ -12,10 +12,10 @@ app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
-    # Dynamic sidebar color theme — only sets the :root CSS variables
     # ── Sidebar color theme ──────────────────────────────────────────────────────
-    # Change this value to switch the active sidebar menu item color.
+    # Dynamic sidebar color theme — only sets the :root CSS variables
     # Available options: "azure", "green", "yellow", "grey", "purple", "red"
+    # Change this value to switch the active sidebar menu item color.
     # ─────────────────────────────────────────────────────────────────────────────
     tags$head(tags$style(HTML(sprintf(
       ":root { --sidebar-core: var(--%s-core); --sidebar-lite: var(--%s-lite); --sidebar-deep: var(--%s-deep); }",
@@ -31,22 +31,22 @@ app_ui <- function(request) {
         rightUi = tags$li(
           class = "dropdown",
           tags$a(
-            href = "#",
-            class = "nav-link",
+            href          = "#",
+            class         = "nav-link",
             `data-toggle` = "dropdown",
             icon("info-circle")
           ),
           tags$div(
             class = "dropdown-menu dropdown-menu-right",
             tags$a(
-              class = "dropdown-item",
-              href = "#",
+              class   = "dropdown-item",
+              href    = "#",
               "Session Info",
               onclick = "Shiny.setInputValue('session_info_button', Math.random())"
             ),
             tags$a(
-              class = "dropdown-item",
-              href = "#",
+              class   = "dropdown-item",
+              href    = "#",
               "Check for Updates",
               onclick = "Shiny.setInputValue('updates_info_button', Math.random())"
             )
@@ -55,32 +55,29 @@ app_ui <- function(request) {
       ),
       help = NULL, #This is the default bs4Dash button to control the presence of tooltips and popovers, which can be added as a user help/info feature.
       bs4DashSidebar(
-        skin="light",
-        status = "warning",
-        fixed=TRUE,
-        #minified = F,
+        skin          = "light",
+        status        = "warning",
+        fixed         = TRUE,
         expandOnHover = TRUE,
-        sidebarMenu(id = "MainMenu",
+        sidebarMenu(
+          id   = "MainMenu",
           flat = FALSE,
           tags$li(class = "header", style = "color: grey; margin-top: 10px; margin-bottom: 10px; padding-left: 15px;", "Menu"),
-                   menuItem("Home", tabName = "welcome", icon = icon("house"),startExpanded = FALSE),
+          menuItem("Home", tabName = "welcome", icon = icon("house"), startExpanded = FALSE),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Pedigree & Parentage"),
-                  menuItem("Pedigree Cleaner", tabName = "ped_cleaner", icon = icon("sitemap")),
+          menuItem("Pedigree Cleaner", tabName = "ped_cleaner", icon = icon("sitemap")),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Breed/Line Composition"),
-                  menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
-                  menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
+          menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
+          menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
+          # ── Genomic Diversity tab intentionally removed ──────────────────────
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
           menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
-          #menuItem(
-          #  span("Job Queue", bs4Badge("demo", position = "right", color = "warning")),
-          #  tabName = "slurm",
-          #  icon = icon("clock")),
           menuItem("Help", tabName = "help", icon = icon("circle-question"))
         )
       ),
       footer = dashboardFooter(
         right = div(
-          style = "display: flex; align-items: center;",  # Align text and images horizontally
+          style = "display: flex; align-items: center;",
           div(
             style = "display: flex; flex-direction: column; margin-right: 15px; text-align: right;",
             div("2026 Breeding Insight"),
@@ -97,7 +94,7 @@ app_ui <- function(request) {
           )
         ),
         left = div(
-          style = "display: flex; align-items: center; height: 100%;",  
+          style = "display: flex; align-items: center; height: 100%;",
           sprintf("v%s", as.character(utils::packageVersion("familia")))
         )
       ),
@@ -106,15 +103,15 @@ app_ui <- function(request) {
         tags$style(
           HTML(
             ".main-footer {
-            background-color: white;
-            color: grey;
-            height: 65px;
-            padding-top: 5px;
-            padding-bottom: 5px;
-          }
-          .main-footer a {
-            color: grey;
-          }"
+              background-color: white;
+              color: grey;
+              height: 65px;
+              padding-top: 5px;
+              padding-bottom: 5px;
+            }
+            .main-footer a {
+              color: grey;
+            }"
           )
         ),
         tabItems(
@@ -122,7 +119,7 @@ app_ui <- function(request) {
             tabName = "welcome", mod_Home_ui("Home_1")
           ),
           tabItem(
-            tabName = "ped_cleaner", mod_ped_cleaner_ui("ped_cleaner_1")   # ADD THIS
+            tabName = "ped_cleaner", mod_ped_cleaner_ui("ped_cleaner_1")
           ),
           tabItem(
             tabName = "polybreedtools", mod_polybreedtools_ui("PolyBreedTools_1")
@@ -152,11 +149,10 @@ golem_add_external_resources <- function() {
     "www",
     app_sys("app/www")
   )
-  
   tags$head(
     favicon(),
     bundle_resources(
-      path = app_sys("app/www"),
+      path      = app_sys("app/www"),
       app_title = "familia"
     ),
     # Add here other external resources
@@ -167,18 +163,7 @@ golem_add_external_resources <- function() {
       /* Make collapse/expand icons visible on white box headers */
       .card-tools .btn-tool { color: #495057 !important; }
       .card-tools .btn-tool:hover { color: #212529 !important; }
-    ")),
-    tags$script(HTML("
-      $(document).ready(function() {
-        // On page load: mirror active class from <li> onto <a> for CSS targeting
-        $('#cnv_1-sample_select_tabs li.active > a').addClass('active');
-
-        // After each tab switch (content already swapped): sync active on <a> only
-        $(document).on('shown.bs.tab', '#cnv_1-sample_select_tabs a[data-toggle=\"tab\"]', function(e) {
-          $('#cnv_1-sample_select_tabs a[data-toggle=\"tab\"]').removeClass('active');
-          $(e.target).addClass('active');
-        });
-      });
     "))
+    # ── Tab-sync script removed: handler already defined in custom.js ────────
   )
 }

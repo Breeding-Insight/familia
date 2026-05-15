@@ -1,3 +1,4 @@
+
 #' Pedigree Cleaner module UI
 #'
 #' @param id Module id
@@ -9,7 +10,7 @@ mod_ped_cleaner_ui <- function(id) {
     shinyjs::useShinyjs(),
     shiny::fluidRow(
       
-      # ── Column 1: Inputs ──────────────────────────────────────────────────
+      # Column 1: Inputs 
       shiny::column(
         width = 3,
         bs4Dash::box(
@@ -53,7 +54,7 @@ mod_ped_cleaner_ui <- function(id) {
         )  # closes box
       ),  # closes column(width = 3)
       
-      # ── Column 2: Results ─────────────────────────────────────────────────
+      # Column 2: Results 
       shiny::column(
         width = 6,
         bs4Dash::box(
@@ -102,7 +103,7 @@ mod_ped_cleaner_ui <- function(id) {
         )  # closes box
       ),  # closes column(width = 6)
       
-      # ── Column 3: Status ──────────────────────────────────────────────────
+      # Column 3: Status 
       shiny::column(
         width = 3,
         bs4Dash::box(
@@ -121,10 +122,10 @@ mod_ped_cleaner_ui <- function(id) {
           )
         )
       )  # closes column(width = 3)
-      
     )  # closes fluidRow
   )    # closes tagList
 }
+
 
 #' Pedigree Cleaner module server
 #'
@@ -137,39 +138,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
     
     check_results <- shiny::reactiveVal(NULL)
     
-    # ── Helpers ───────────────────────────────────────────────────────────────
-    make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
-      shiny::tags$div(
-        class = "card mb-1",
-        style = "border: 1px solid #dee2e6; border-radius: 4px;",
-        shiny::tags$div(
-          class = "card-header p-0",
-          style = "background-color: #f8f9fa;",
-          shiny::tags$button(
-            class           = "btn btn-link btn-sm w-100 text-left d-flex align-items-center",
-            style           = "color: #343a40; text-decoration: none; font-size: 13px; padding: 8px 12px; gap: 6px;",
-            `data-toggle`   = "collapse",
-            `data-target`   = paste0("#", panel_id),
-            `aria-expanded` = "false",
-            shiny::icon(icon_name),
-            shiny::tags$span(label)
-          )
-        ),
-        shiny::tags$div(
-          id    = panel_id,
-          class = "collapse",
-          shiny::tags$div(
-            class = "card-body",
-            style = "padding: 12px 14px; font-size: 13px;",
-            body_content
-          )
-        )
-      )
-    }
-    
-    sanitize_id <- function(x) gsub("[^A-Za-z0-9]", "_", tolower(x))
-    
-    # ── Help button ───────────────────────────────────────────────────────────
+    # Help button 
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
@@ -182,11 +151,11 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       )
     })
     
-    # ── Run check ─────────────────────────────────────────────────────────────
+    # Run check 
     shiny::observeEvent(input$run_check, {
       shiny::req(input$ped_file)
       check_results(NULL)
-      shinyjs::disable(session$ns("download_results"))
+      shinyjs::disable("download_results")          # ← un-namespaced; shinyjs handles it
       
       tryCatch({
         shinyWidgets::updateProgressBar(
@@ -237,16 +206,21 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           title = "Detecting cycles and dependencies..."
         )
         
+        # Correction 3: write ped_raw to a known-extension temp file 
+        tmp_ped_path <- tempfile(fileext = ".txt")
+        write.table(ped_raw, tmp_ped_path,
+                    sep = "\t", row.names = FALSE, quote = FALSE)
+        
         report <- BIGr::check_ped(
-          ped.file = tmp_path,
+          ped.file = tmp_ped_path,
           verbose  = FALSE,
           save_zip = FALSE
         )
         
-        file_base_actual <- tools::file_path_sans_ext(basename(tmp_path))
-        corrected_name   <- paste0(file_base_actual, "_corrected")
-        corrected_ped    <- tryCatch(
-          get(corrected_name, envir = .GlobalEnv, inherits = FALSE),
+        # Correction 4: retrieve corrected pedigree from check_ped return 
+        # Use the session-local report value instead of reaching into .GlobalEnv
+        corrected_ped <- tryCatch(
+          report$corrected_ped,
           error = function(e) NULL
         )
         
@@ -260,7 +234,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           value = 100, status = "success",
           title = "Finished"
         )
-        shinyjs::enable(session$ns("download_results"))
+        shinyjs::enable("download_results")          # ← un-namespaced; shinyjs handles it
         
         bs4Dash::updateTabsetPanel(session, "ped_results_tabs", selected = "Summary")
         
@@ -273,7 +247,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       })
     })
     
-    # ── Summary banner ────────────────────────────────────────────────────────
+    # Summary banner 
     output$summary_banner <- shiny::renderUI({
       shiny::req(check_results())
       report <- check_results()$report
@@ -307,7 +281,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       ))
     })
     
-    # ── Results UI ────────────────────────────────────────────────────────────
+    # Results UI 
     output$results_ui <- shiny::renderUI({
       shiny::req(check_results())
       report <- check_results()$report
@@ -370,7 +344,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       )
     })
     
-    # ── Download ──────────────────────────────────────────────────────────────
+    # Download
     output$download_results <- shiny::downloadHandler(
       filename = function() {
         paste0("pedigree_check_", Sys.Date(), ".zip")
@@ -414,3 +388,35 @@ mod_ped_cleaner_server <- function(id, parent_session) {
     
   })
 }
+
+# Helpers
+make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
+  shiny::tags$div(
+    class = "card mb-1",
+    style = "border: 1px solid #dee2e6; border-radius: 4px;",
+    shiny::tags$div(
+      class = "card-header p-0",
+      style = "background-color: #f8f9fa;",
+      shiny::tags$button(
+        class           = "btn btn-link btn-sm w-100 text-left d-flex align-items-center",
+        style           = "color: #343a40; text-decoration: none; font-size: 13px; padding: 8px 12px; gap: 6px;",
+        `data-toggle`   = "collapse",
+        `data-target`   = paste0("#", panel_id),
+        `aria-expanded` = "false",
+        shiny::icon(icon_name),
+        shiny::tags$span(label)
+      )
+    ),
+    shiny::tags$div(
+      id    = panel_id,
+      class = "collapse",
+      shiny::tags$div(
+        class = "card-body",
+        style = "padding: 12px 14px; font-size: 13px;",
+        body_content
+      )
+    )
+  )
+}
+
+sanitize_id <- function(x) gsub("[^A-Za-z0-9]", "_", tolower(x))
