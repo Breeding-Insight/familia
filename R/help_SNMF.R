@@ -11,7 +11,6 @@
 #' @noRd
 help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
   pid <- function(x) if (nchar(id_prefix) > 0) paste0(id_prefix, "_", x) else x
-  
   if (is.null(collapse_fn)) {
     collapse_fn <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
@@ -58,7 +57,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       shiny::tags$tbody(rows)
     )
   }
-  
   ce_row <- function(k, run, ce, bg = NULL) {
     style <- if (!is.null(bg)) paste0("background-color:", bg, ";") else ""
     shiny::tags$tr(
@@ -70,7 +68,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
   }
   
   shiny::tagList(
-    
     shiny::h6(shiny::tagList(shiny::icon("circle-info"), " Overview"),
               style = "font-weight: bold;"),
     shiny::p(
@@ -111,7 +108,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         "<strong>Review</strong> the Cross-Entropy, Ancestry Plot, Q Matrix, and Logs tabs."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Export</strong> the Q matrix as <code>.csv</code>or cross-entropy as <code>.csv</code>."
+        "<strong>Export</strong> the Q matrix as <code>.csv</code> or cross-entropy as <code>.csv</code>."
       ))
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -123,7 +120,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::p("Click each mode to see how K and run are selected.",
              style = "color: #6c757d; font-size: 12px; margin-bottom: 8px;"),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_auto_entropy"),
       icon_name    = "wand-magic-sparkles",
@@ -147,7 +143,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_manual_entropy"),
       icon_name    = "hand-pointer",
@@ -166,7 +161,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_no_entropy"),
       icon_name    = "ban",
@@ -184,7 +178,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
     shiny::hr(style = "margin: 8px 0;"),
     
     # ── Parameter Reference ──────────────────────────────────────────
@@ -194,7 +187,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::p("Click each parameter to see what it controls.",
              style = "color: #6c757d; font-size: 12px; margin-bottom: 8px;"),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_alpha"),
       icon_name    = "a",
@@ -206,7 +198,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_iterations"),
       icon_name    = "rotate",
@@ -217,7 +208,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_tolerance"),
       icon_name    = "arrows-left-right-to-line",
@@ -229,7 +219,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_percentage"),
       icon_name    = "percent",
@@ -240,7 +229,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_cpu"),
       icon_name    = "microchip",
@@ -251,7 +239,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
-    
     collapse_fn(
       panel_id     = pid("snmf_help_seed"),
       icon_name    = "seedling",
@@ -262,7 +249,64 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         style = "margin: 0;"
       )
     ),
+    shiny::hr(style = "margin: 8px 0;"),
     
+    # ── Plot Controls ─────────────────────────────────────────────────
+    shiny::h6(
+      shiny::tagList(shiny::icon("palette"), " Plot Controls"),
+      style = "font-weight: bold;"
+    ),
+    shiny::p("Click each control to see what it does.",
+             style = "color: #6c757d; font-size: 12px; margin-bottom: 8px;"),
+    collapse_fn(
+      panel_id     = pid("snmf_help_color_palette"),
+      icon_name    = "palette",
+      label        = "Color Palette",
+      body_content = shiny::p(
+        "Selects the color scheme for the ancestry plot. Palettes are drawn from ColorBrewer.
+         When the number of clusters (K) exceeds the maximum colors supported by the chosen
+         palette, colors are automatically interpolated so every cluster receives a distinct
+         color. Colorblind-friendly palettes are available in the second group of the dropdown.",
+        style = "margin: 0;"
+      )
+    ),
+    collapse_fn(
+      panel_id     = pid("snmf_help_show_labels"),
+      icon_name    = "tag",
+      label        = "Show sample labels",
+      body_content = shiny::p(
+        "Toggles the display of individual sample IDs on the x-axis of the ancestry plot.
+         Hiding labels can improve readability for large datasets.",
+        style = "margin: 0;"
+      )
+    ),
+    collapse_fn(
+      panel_id     = pid("snmf_help_sort_by_cluster"),
+      icon_name    = "arrow-down-wide-short",
+      label        = "Sort by dominant cluster",
+      body_content = shiny::tagList(
+        shiny::p(
+          "When checked, individuals in the ancestry plot are reordered so that those sharing
+           the same dominant cluster appear together, sorted from highest to lowest proportion
+           of that cluster. This produces the classic STRUCTURE-style grouped bar plot.",
+          style = "margin-bottom: 6px;"
+        ),
+        shiny::p(
+          "When unchecked, individuals are displayed in their original input order.",
+          style = "color: #6c757d; font-size: 11px; margin: 0;"
+        )
+      )
+    ),
+    collapse_fn(
+      panel_id     = pid("snmf_help_label_size"),
+      icon_name    = "text-height",
+      label        = "Label size",
+      body_content = shiny::p(
+        "Controls the font size of the sample ID labels on the x-axis. Range is 6–14pt.
+         Only has a visible effect when sample labels are enabled.",
+        style = "margin: 0;"
+      )
+    ),
     shiny::hr(style = "margin: 8px 0;"),
     
     # ── Export Contents ──────────────────────────────────────────────
@@ -278,7 +322,6 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         "<code>Download cross-entropy (CSV)</code> — full cross-entropy table across all
          K values and repetitions (only available when cross-entropy is enabled)."
       )),
-
       shiny::tags$li(shiny::HTML(
         "<code>Save Image</code> — exports the Cross-Entropy Plot or Ancestry Plot as
          <code>jpeg</code>, <code>tiff</code>, <code>png</code>, or <code>svg</code>
