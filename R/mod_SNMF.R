@@ -23,6 +23,7 @@ mod_SNMF_ui <- function(id) {
         overlayOpacity = 0.3,
         refreshColour  = "purple"
       ),
+      
       #  Column 1: Inputs
       shiny::column(
         width = 3,
@@ -75,6 +76,7 @@ mod_SNMF_ui <- function(id) {
           )
         )
       ),
+      
       #  Column 2: Results
       shiny::column(
         width = 6,
@@ -124,6 +126,7 @@ mod_SNMF_ui <- function(id) {
           )
         )
       ),
+      
       #  Column 3: Status + Plot Controls
       shiny::column(
         width = 3,
@@ -161,7 +164,8 @@ mod_SNMF_ui <- function(id) {
             ),
             selected = "Set1"
           ),
-          shiny::checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels", value = TRUE),
+          shiny::checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels",     value = TRUE),
+          shiny::checkboxInput(ns("snmf_sort_by_cluster"),    "Sort by dominant cluster", value = FALSE),
           shiny::sliderInput(ns("snmf_label_size"), "Label size", min = 6, max = 14, value = 8, step = 1),
           shiny::div(
             style = "display:inline-block; float:left",
@@ -426,11 +430,36 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       times     = q_cols,
       direction = "long"
     )
-    long$ID      <- factor(long$ID,      levels = unique(df$ID))
     long$Cluster <- factor(long$Cluster, levels = q_cols)
+    
+    # Sort by dominant cluster
+    if (isTRUE(input$snmf_sort_by_cluster)) {
+      q_wide           <- as.data.frame(q)
+      dominant_cluster <- colnames(q_wide)[max.col(q_wide, ties.method = "first")]
+      dominant_value   <- apply(q_wide, 1, max, na.rm = TRUE)
+      id_order <- data.frame(
+        ID               = rownames(q),
+        dominant_cluster = dominant_cluster,
+        dominant_value   = dominant_value,
+        stringsAsFactors = FALSE
+      )
+      id_order <- id_order[order(id_order$dominant_cluster, -id_order$dominant_value), ]
+      long$ID  <- factor(long$ID, levels = id_order$ID)
+    } else {
+      long$ID <- factor(long$ID, levels = unique(df$ID))
+    }
+
+    #  Palette fix: brwer pallete allows up to 9 colors but we need 10
+    palette_name <- input$snmf_color_choice %||% "Set1"
+    palette_info <- RColorBrewer::brewer.pal.info[palette_name, , drop = FALSE]
+    max_colors   <- palette_info$maxcolors[[1]]
+    n_base       <- max(3L, max_colors)         # brewer.pal requires n >= 3
+    base_colors  <- RColorBrewer::brewer.pal(n_base, palette_name)
+    fill_colors  <- grDevices::colorRampPalette(base_colors)(length(q_cols))
+
     p <- ggplot2::ggplot(long, ggplot2::aes(x = ID, y = Q, fill = Cluster)) +
       ggplot2::geom_col(width = 0.9) +
-      ggplot2::scale_fill_brewer(palette = input$snmf_color_choice %||% "Set1") +
+      ggplot2::scale_fill_manual(values = fill_colors, drop = FALSE) +
       ggplot2::scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
       ggplot2::labs(x = "Individual", y = "Ancestry proportion", fill = "Cluster") +
       ggplot2::theme_minimal() +
@@ -441,6 +470,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
         ),
         panel.grid.major.x = ggplot2::element_blank()
       )
+    
     if (!isTRUE(input$snmf_show_sample_labels)) {
       p <- p + ggplot2::theme(
         axis.text.x  = ggplot2::element_blank(),
@@ -457,7 +487,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     DT::datatable(df, options = list(scrollX = TRUE, pageLength = 10))
   })
   
-  output$snmf_q_plot <- shiny::renderPlot({ ancestry_plot() })
+  output$snmf_q_plot  <- shiny::renderPlot({ ancestry_plot() })
   output$snmf_ce_plot <- shiny::renderPlot({ ce_plot() })
   
   output$snmf_ce_table <- DT::renderDT({
@@ -508,13 +538,16 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     state$best_k          <- NULL
     state$best_run_by_k   <- NULL
     state$sample_ids      <- NULL
+    
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 5,  title = "Preparing input")
     set_status("Preparing input...\n")
+    
     uploaded_name <- input$snmf_file$name %||% "genotypes"
     ext_lower     <- tolower(uploaded_name)
     file_base     <- sub("\\.(vcf\\.gz|vcf|geno|gz)$", "", basename(uploaded_name), ignore.case = TRUE)
     geno_path     <- file.path(state$run_dir, paste0(file_base, ".geno"))
     uploaded_path <- input$snmf_file$datapath
+    
     if (grepl("\\.geno$", ext_lower)) {
       copy_file_if_needed(uploaded_path, geno_path, overwrite = TRUE)
     } else if (grepl("\\.vcf\\.gz$|\\.vcf$|\\.gz$", ext_lower)) {
@@ -547,8 +580,10 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       set_status("ERROR: Unsupported file type.\n")
       return()
     }
+    
     state$geno_path <- geno_path
     state$vcf_path  <- NULL
+    
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 35, title = "Running SNMF")
     set_status(
       "Running SNMF...\n",
@@ -557,9 +592,11 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       "Repetitions: ", reps, "\n",
       "Entropy: ", if (entropy_enabled) "enabled" else "disabled", "\n"
     )
+    
     old_wd <- getwd()
     on.exit(setwd(old_wd), add = TRUE)
     setwd(state$run_dir)
+    
     snmf_args <- list(
       state$geno_path,
       K           = state$k_values,
@@ -573,6 +610,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       CPU         = as.integer(input$snmf_cpu),
       seed        = as.integer(input$snmf_seed)
     )
+    
     project <- tryCatch(
       call_with_allowed_named_args(LEA::snmf, snmf_args),
       error = function(e) e
@@ -584,8 +622,10 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       return()
     }
     state$project <- project
+    
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 75, title = "Summarizing results")
     set_status(paste0(capture.output(str(project, max.level = 1)), collapse = "\n"), "\n")
+    
     if (entropy_enabled) {
       ce_records <- list()
       for (k in state$k_values) {
@@ -603,6 +643,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
         }
       }
       state$ce_df <- do.call(rbind, ce_records)
+      
       min_ce_by_k   <- tapply(state$ce_df$cross_entropy, state$ce_df$K, min, na.rm = TRUE)
       best_run_by_k <- sapply(names(min_ce_by_k), function(k_chr) {
         k_int <- as.integer(k_chr)
@@ -611,6 +652,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
         sub$run[which.min(sub$cross_entropy)]
       })
       state$best_run_by_k <- best_run_by_k
+      
       ce_summary <- data.frame(
         K                 = as.integer(names(min_ce_by_k)),
         best_run          = as.integer(best_run_by_k[names(min_ce_by_k)]),
@@ -623,6 +665,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     } else {
       state$best_k <- state$k_values[[1]]
     }
+    
     shiny::updateSelectInput(
       session, "snmf_selected_k",
       choices  = as.character(state$k_values),
@@ -638,6 +681,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       choices  = as.character(seq_len(reps)),
       selected = as.character(initial_run)
     )
+    
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 100, title = "Complete!")
     set_status("SNMF complete.\n")
   })
@@ -692,5 +736,6 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
 
 ## To be copied in the UI
 # mod_SNMF_ui("SNMF_1")
+
 ## To be copied in the server
 # mod_SNMF_server("SNMF_1")
