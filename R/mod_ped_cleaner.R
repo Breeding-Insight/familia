@@ -236,7 +236,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         )
         shinyjs::enable("download_results")          # ← un-namespaced; shinyjs handles it
         
-        bs4Dash::updateTabsetPanel(session, "ped_results_tabs", selected = "Summary")
+        shiny::updateTabsetPanel(session, "ped_results_tabs", selected = "Summary")
         
       }, error = function(e) {
         shinyWidgets::updateProgressBar(
