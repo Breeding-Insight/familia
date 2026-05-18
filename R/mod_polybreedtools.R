@@ -240,10 +240,14 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       sample_call_rate    <- rowSums(!is.na(validation_markers)) / ncol(validation_markers)
       removed_samples     <- validation_raw$ID[sample_call_rate < 0.5]
       validation_filtered <- validation_raw[sample_call_rate >= 0.5, , drop = FALSE]
+      if (nrow(validation_filtered) == 0) {
+        stop("No validation samples remain after filtering for genotyping rate >= 50%.")
+      }
       # NA filtering: validation markers (columns) with all NA
-      col_call_counts <- colSums(!is.na(validation_filtered))
-      removed_markers <- colnames(validation_filtered)[col_call_counts == 0]
-      validation      <- validation_filtered[, col_call_counts > 0, drop = FALSE]
+      validation_marker_filtered <- validation_filtered[, colnames(validation_filtered) != "ID", drop = FALSE]
+      col_call_counts <- colSums(!is.na(validation_marker_filtered))
+      removed_markers <- colnames(validation_marker_filtered)[col_call_counts == 0]
+      validation      <- validation_filtered[, c(TRUE, col_call_counts > 0), drop = FALSE]
       # Build warning messages
       warning_messages <- c()
       if (length(removed_samples) > 0) {
