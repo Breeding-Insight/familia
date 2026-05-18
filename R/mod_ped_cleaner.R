@@ -355,6 +355,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         report  <- results$report
         tmp_dir <- tempfile("ped_export")
         dir.create(tmp_dir)
+        on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
         
         if (!is.null(results$corrected_ped)) {
           write.table(results$corrected_ped,
