@@ -258,7 +258,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ul(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Results Table</strong> — downloadable as <code>.xlsx</code> via <em>Save Files</em>.
+        "<strong>Results Table</strong> — downloadable as <code>.xlsx</code> via <em>Save Excel File</em>.
          Contains each validation sample's estimated ancestry proportion per group and its predicted line."
       )),
       shiny::tags$li(shiny::HTML(
