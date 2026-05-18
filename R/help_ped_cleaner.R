@@ -88,7 +88,7 @@ help_content_ped_cleaner <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload</strong> a tab-separated <code>.txt</code>, <code>.tsv</code>, or <code>.csv</code>
+        "<strong>Upload</strong> a tab-separated <code>.txt</code> or <code>.tsv</code>, or a comma-separated <code>.csv</code>,
         file with three columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>."
       )),
       shiny::tags$li(shiny::HTML("<strong>Run Pedigree Check</strong> — scans for all five issue types below.")),
