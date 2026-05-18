@@ -73,8 +73,8 @@ mod_SNMF_ui <- function(id) {
               style = "background-color: #FFD700; color: #000000; border:none; padding: 8px 16px; border-radius: 5px;"
             )
           )
-        )  # closes box
-      ),  # closes column(width = 3)
+        )
+      ),
       #  Column 2: Results
       shiny::column(
         width = 6,
@@ -122,8 +122,8 @@ mod_SNMF_ui <- function(id) {
               style = "overflow-y: auto; height: 500px"
             )
           )
-        )  # closes box
-      ),  # closes column(width = 6)
+        )
+      ),
       #  Column 3: Status + Plot Controls
       shiny::column(
         width = 3,
@@ -143,58 +143,57 @@ mod_SNMF_ui <- function(id) {
             title       = " "
           )
         ),
-        box(
+        bs4Dash::box(
           title       = "Plot Controls",
           width       = 12,
           status      = "warning",
           solidHeader = TRUE,
           collapsible = TRUE,
           shiny::uiOutput(ns("snmf_selectors_ui")),
-          # ── Palette and label controls (mirrored from PolyBreedTools) ──────
-          selectInput(ns("snmf_color_choice"), "Color Palette",
-                      choices = list(
-                        "Standard Palettes"   = c("Set1","Set3","Pastel2","Pastel1","Accent","Spectral","RdYlGn","RdGy"),
-                        "Colorblind Friendly" = c("Set2","Paired","Dark2","YlOrRd","YlOrBr","YlGnBu","YlGn",
-                                                  "Reds","RdPu","Purples","PuRd","PuBuGn","PuBu","OrRd",
-                                                  "Oranges","Greys","Greens","GnBu","BuPu","BuGn","Blues",
-                                                  "RdYlBu","RdBu","PuOr","PRGn","PiYG","BrBG")
-                      ),
-                      selected = "Set1"),
-          checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels", value = TRUE),
-          sliderInput(ns("snmf_label_size"), "Label size", min = 6, max = 14, value = 8, step = 1),
-          div(
+          shiny::selectInput(
+            ns("snmf_color_choice"), "Color Palette",
+            choices = list(
+              "Standard Palettes"   = c("Set1","Set3","Pastel2","Pastel1","Accent","Spectral","RdYlGn","RdGy"),
+              "Colorblind Friendly" = c("Set2","Paired","Dark2","YlOrRd","YlOrBr","YlGnBu","YlGn",
+                                        "Reds","RdPu","Purples","PuRd","PuBuGn","PuBu","OrRd",
+                                        "Oranges","Greys","Greens","GnBu","BuPu","BuGn","Blues",
+                                        "RdYlBu","RdBu","PuOr","PRGn","PiYG","BrBG")
+            ),
+            selected = "Set1"
+          ),
+          shiny::checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels", value = TRUE),
+          shiny::sliderInput(ns("snmf_label_size"), "Label size", min = 6, max = 14, value = 8, step = 1),
+          shiny::div(
             style = "display:inline-block; float:left",
-            dropdownButton(
-              tags$h3("Save Image"),
-              selectInput(ns("snmf_figure"),     "Figure",    choices  = c("Cross-Entropy Plot", "Ancestry Plot")),
-              selectInput(ns("snmf_image_type"), "File Type", choices  = c("jpeg", "tiff", "png", "svg"), selected = "jpeg"),
-              sliderInput(ns("snmf_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
-              sliderInput(ns("snmf_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
-              sliderInput(ns("snmf_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              fluidRow(
-                downloadButton(ns("download_snmf_figure"), "Save Image"),
-                downloadButton(ns("download_snmf_file"),   "Save Files"),
-                downloadButton(ns("download_project_zip"), "Save Project")
-              ),
+            shinyWidgets::dropdownButton(
+              shiny::tags$h3("Save Image"),
+              shiny::selectInput(ns("snmf_figure"),     "Figure",    choices = c("Cross-Entropy Plot", "Ancestry Plot")),
+              shiny::selectInput(ns("snmf_image_type"), "File Type", choices = c("jpeg", "tiff", "png", "svg"), selected = "jpeg"),
+              shiny::sliderInput(ns("snmf_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
+              shiny::sliderInput(ns("snmf_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
+              shiny::sliderInput(ns("snmf_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
+              shiny::downloadButton(ns("download_snmf_figure"), "Save Image"),
               circle  = FALSE,
               status  = "danger",
-              icon    = icon("floppy-disk"),
+              icon    = shiny::icon("floppy-disk"),
               width   = "300px",
               label   = "Save",
-              tooltip = tooltipOptions(title = "Click to see inputs!")
+              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
             )
           )
-        )  # closes Plot Controls box
-      )   # closes column(width = 3)
-    )  # closes fluidRow
-  )    # closes tagList
+        )
+      )
+    )
+  )
 }
+
 #' SNMF Server Functions
 #'
 #' @noRd
 mod_SNMF_server <- function(input, output, session, parent_session) {
   ns <- session$ns
   `%||%` <- function(x, y) if (is.null(x)) y else x
+  
   make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
     shiny::tags$div(
       class = "card mb-1",
@@ -223,6 +222,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       )
     )
   }
+  
   #  Help button
   shiny::observeEvent(input$help_btn, {
     shiny::showModal(
@@ -235,10 +235,12 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       )
     )
   })
+  
   set_status <- function(...) {
     msg <- paste0(...)
     output$snmf_status <- shiny::renderText(msg)
   }
+  
   show_error <- function(title, message) {
     shiny::showModal(shiny::modalDialog(
       title     = title,
@@ -247,24 +249,28 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       message
     ))
   }
+  
   call_with_allowed_named_args <- function(fun, args) {
     allowed <- names(formals(fun))
     if (is.null(allowed)) return(do.call(fun, args))
     keep <- names(args) == "" | names(args) %in% allowed
     do.call(fun, args[keep])
   }
+  
   same_path <- function(path_a, path_b) {
     identical(
       normalizePath(path_a, winslash = "/", mustWork = FALSE),
       normalizePath(path_b, winslash = "/", mustWork = FALSE)
     )
   }
+  
   copy_file_if_needed <- function(from, to, overwrite = TRUE) {
     if (same_path(from, to)) return(to)
     ok <- file.copy(from, to, overwrite = overwrite)
     if (!isTRUE(ok)) stop("Failed to copy file from ", from, " to ", to, call. = FALSE)
     to
   }
+  
   write_vcf_upload_as_geno <- function(vcf_path, geno_path) {
     vcf <- vcfR::read.vcfR(vcf_path, verbose = FALSE)
     gt  <- as.matrix(vcfR::extract.gt(vcf, element = "GT"))
@@ -281,14 +287,17 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     LEA::write.geno(lea_mat, geno_path)
     list(geno_path = geno_path, sample_ids = colnames(gt))
   }
+  
   run_ctx <- new.env(parent = emptyenv())
   run_ctx$run_dir <- NULL
+  
   cleanup_run_dir <- function(path = run_ctx$run_dir) {
     if (!is.null(path) && dir.exists(path)) {
       unlink(path, recursive = TRUE, force = TRUE)
     }
     if (identical(run_ctx$run_dir, path)) run_ctx$run_dir <- NULL
   }
+  
   state <- shiny::reactiveValues(
     run_dir         = NULL,
     project         = NULL,
@@ -303,6 +312,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     best_run_by_k   = NULL,
     sample_ids      = NULL
   )
+  
   #  Value boxes
   output$snmf_best_k_box <- bs4Dash::renderValueBox({
     bs4Dash::valueBox(
@@ -312,6 +322,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       color    = "info"
     )
   })
+  
   output$snmf_best_ce_box <- bs4Dash::renderValueBox({
     bs4Dash::valueBox(
       value = if (isTRUE(state$entropy_enabled) && !is.null(state$ce_summary)) {
@@ -326,6 +337,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       color    = "olive"
     )
   })
+  
   #  Selectors UI
   output$snmf_selectors_ui <- shiny::renderUI({
     if (is.null(state$project) || is.null(state$k_values) || is.null(state$repetitions)) {
@@ -346,7 +358,8 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       )
     )
   })
-  observeEvent(input$snmf_selected_k, {
+  
+  shiny::observeEvent(input$snmf_selected_k, {
     req(state$project, state$k_values, state$repetitions)
     k            <- as.integer(input$snmf_selected_k)
     selected_run <- 1L
@@ -359,18 +372,21 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       selected = as.character(selected_run)
     )
   }, ignoreInit = TRUE)
+  
   selected_k <- shiny::reactive({
     req(state$project, state$k_values)
     k <- input$snmf_selected_k
     if (is.null(k) || !nzchar(k)) return(as.integer(state$best_k %||% state$k_values[[1]]))
     as.integer(k)
   })
+  
   selected_run <- shiny::reactive({
     req(state$project, state$repetitions)
     r <- input$snmf_selected_run
     if (is.null(r) || !nzchar(r)) return(1L)
     as.integer(r)
   })
+  
   #  Q matrix reactive
   q_matrix <- shiny::reactive({
     req(state$project)
@@ -386,16 +402,18 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     colnames(q) <- paste0("Cluster", seq_len(ncol(q)))
     q
   })
-  # ── Shared plot helpers (used by both render outputs and download handler) ──
+  
+  #  Shared plot reactives
   ce_plot <- shiny::reactive({
-    validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
-    validate(shiny::need(!is.null(state$ce_summary),    "Run SNMF to compute cross-entropy."))
-    ggplot(state$ce_summary, aes(x = K, y = min_cross_entropy)) +
-      geom_line() +
-      geom_point() +
-      labs(x = "K", y = "Minimum cross-entropy", title = "SNMF cross-entropy by K") +
-      theme_minimal()
+    shiny::validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
+    shiny::validate(shiny::need(!is.null(state$ce_summary),    "Run SNMF to compute cross-entropy."))
+    ggplot2::ggplot(state$ce_summary, ggplot2::aes(x = K, y = min_cross_entropy)) +
+      ggplot2::geom_line() +
+      ggplot2::geom_point() +
+      ggplot2::labs(x = "K", y = "Minimum cross-entropy", title = "SNMF cross-entropy by K") +
+      ggplot2::theme_minimal()
   })
+  
   ancestry_plot <- shiny::reactive({
     q      <- q_matrix()
     df     <- data.frame(ID = rownames(q), q, check.names = FALSE)
@@ -410,46 +428,46 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     )
     long$ID      <- factor(long$ID,      levels = unique(df$ID))
     long$Cluster <- factor(long$Cluster, levels = q_cols)
-    p <- ggplot(long, ggplot2::aes(x = ID, y = Q, fill = Cluster)) +
-      geom_col(width = 0.9) +
-      scale_fill_brewer(palette = input$snmf_color_choice %||% "Set1") +
-      scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
-      labs(x = "Individual", y = "Ancestry proportion", fill = "Cluster") +
-      theme_minimal() +
-      theme(
-        axis.text.x        = element_text(
+    p <- ggplot2::ggplot(long, ggplot2::aes(x = ID, y = Q, fill = Cluster)) +
+      ggplot2::geom_col(width = 0.9) +
+      ggplot2::scale_fill_brewer(palette = input$snmf_color_choice %||% "Set1") +
+      ggplot2::scale_y_continuous(labels = scales::percent_format(accuracy = 1)) +
+      ggplot2::labs(x = "Individual", y = "Ancestry proportion", fill = "Cluster") +
+      ggplot2::theme_minimal() +
+      ggplot2::theme(
+        axis.text.x        = ggplot2::element_text(
           angle = 45, hjust = 1, vjust = 1,
           size  = as.numeric(input$snmf_label_size %||% 8)
         ),
-        panel.grid.major.x = element_blank()
+        panel.grid.major.x = ggplot2::element_blank()
       )
     if (!isTRUE(input$snmf_show_sample_labels)) {
-      p <- p + theme(
-        axis.text.x  = element_blank(),
-        axis.ticks.x = element_blank()
+      p <- p + ggplot2::theme(
+        axis.text.x  = ggplot2::element_blank(),
+        axis.ticks.x = ggplot2::element_blank()
       )
     }
     p
   })
-  #  Outputs
+  
+  #  Render outputs
   output$snmf_q_table <- DT::renderDT({
     q  <- q_matrix()
     df <- data.frame(ID = rownames(q), q, check.names = FALSE)
     DT::datatable(df, options = list(scrollX = TRUE, pageLength = 10))
   })
-  output$snmf_q_plot <- shiny::renderPlot({
-    ancestry_plot()
-  })
-  output$snmf_ce_plot <- shiny::renderPlot({
-    ce_plot()
-  })
+  
+  output$snmf_q_plot <- shiny::renderPlot({ ancestry_plot() })
+  output$snmf_ce_plot <- shiny::renderPlot({ ce_plot() })
+  
   output$snmf_ce_table <- DT::renderDT({
-    validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
-    validate(shiny::need(!is.null(state$ce_summary),    "Run SNMF to compute cross-entropy."))
+    shiny::validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
+    shiny::validate(shiny::need(!is.null(state$ce_summary),    "Run SNMF to compute cross-entropy."))
     DT::datatable(state$ce_summary, options = list(pageLength = 10, scrollX = TRUE))
   })
+  
   #  Run SNMF
-  observeEvent(input$snmf_run, {
+  shiny::observeEvent(input$snmf_run, {
     if (!requireNamespace("LEA", quietly = TRUE)) {
       show_error("Missing dependency", "Install the LEA package to use SNMF.")
       return()
@@ -497,7 +515,6 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     file_base     <- sub("\\.(vcf\\.gz|vcf|geno|gz)$", "", basename(uploaded_name), ignore.case = TRUE)
     geno_path     <- file.path(state$run_dir, paste0(file_base, ".geno"))
     uploaded_path <- input$snmf_file$datapath
-    # Convert input to .geno if needed
     if (grepl("\\.geno$", ext_lower)) {
       copy_file_if_needed(uploaded_path, geno_path, overwrite = TRUE)
     } else if (grepl("\\.vcf\\.gz$|\\.vcf$|\\.gz$", ext_lower)) {
@@ -606,7 +623,6 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     } else {
       state$best_k <- state$k_values[[1]]
     }
-    # Initialize selectors
     shiny::updateSelectInput(
       session, "snmf_selected_k",
       choices  = as.character(state$k_values),
@@ -625,6 +641,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 100, title = "Complete!")
     set_status("SNMF complete.\n")
   })
+  
   #  Downloads
   output$download_q_csv <- shiny::downloadHandler(
     filename = function() paste0("snmf_Q_K", selected_k(), "_run", selected_run(), "_", Sys.Date(), ".csv"),
@@ -635,44 +652,16 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       utils::write.csv(df, file, row.names = FALSE)
     }
   )
+  
   output$download_ce_csv <- shiny::downloadHandler(
     filename = function() paste0("snmf_cross_entropy_", Sys.Date(), ".csv"),
     content  = function(file) {
       req(state$project)
-      validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
+      shiny::validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
       utils::write.csv(state$ce_df %||% data.frame(), file, row.names = FALSE)
     }
   )
-  output$download_project_zip <- shiny::downloadHandler(
-    filename = function() paste0("snmf_project_", Sys.Date(), ".zip"),
-    content  = function(file) {
-      req(state$project)
-      export_try <- function(args) {
-        tryCatch(call_with_allowed_named_args(LEA::export.snmfProject, args), error = function(e) e)
-      }
-      res <- export_try(list(state$project, file = file))
-      if (file.exists(file)) return()
-      res2 <- export_try(list(state$project))
-      if (is.character(res2) && length(res2) >= 1) {
-        if (file.exists(res2[[1]])) { file.copy(res2[[1]], file, overwrite = TRUE); return() }
-        if (dir.exists(res2[[1]])) {
-          all_paths <- list.files(res2[[1]], full.names = TRUE, recursive = TRUE)
-          all_paths <- all_paths[file.info(all_paths)$isdir %in% FALSE]
-          utils::zip(zipfile = file, files = all_paths)
-          return()
-        }
-      }
-      zips <- list.files(state$run_dir, pattern = "\\.zip$", full.names = TRUE)
-      if (length(zips) >= 1) {
-        newest <- zips[which.max(file.info(zips)$mtime)]
-        file.copy(newest, file, overwrite = TRUE)
-        return()
-      }
-      if (inherits(res,  "error")) stop(res$message)
-      if (inherits(res2, "error")) stop(res2$message)
-      stop("export.snmfProject() did not produce a zip file.")
-    }
-  )
+  
   output$download_snmf_figure <- shiny::downloadHandler(
     filename = function() {
       ext <- input$snmf_image_type %||% "jpeg"
@@ -687,7 +676,6 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       height <- as.numeric(input$snmf_image_height %||% 5)
       dpi    <- as.numeric(input$snmf_image_res    %||% 300)
       fig    <- input$snmf_figure %||% "Ancestry Plot"
-      # ── Shared plot helpers called here; no duplicated plot logic ─────────
       p <- if (fig == "Cross-Entropy Plot") ce_plot() else ancestry_plot()
       if (ext %in% c("png", "jpeg", "tiff")) {
         ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
@@ -696,10 +684,12 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       }
     }
   )
+  
   session$onSessionEnded(function() {
     cleanup_run_dir()
   })
 }
+
 ## To be copied in the UI
 # mod_SNMF_ui("SNMF_1")
 ## To be copied in the server
