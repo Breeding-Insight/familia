@@ -64,7 +64,7 @@ mod_polybreedtools_ui <- function(id) {
                       <a href="https://www.animalsciencepublications.org/publications/tas/articles/1/1/36" target="_blank">Funkhouser et al. (2017)</a>.</li>
                     <li><strong>Input format:</strong></li>
                     <ul>
-                      <li><strong>Reference Genotypes:</strong> A genotype matrix (.txt) with SNPs in rows and samples in columns. The first column must be <code>ID</code>. Missing should be coded as <code>NA</code>.</li>
+                      <li><strong>Reference Genotypes:</strong> A genotype matrix (.txt) with samples in rows and SNP markers in columns. The first column must be <code>ID</code> containing sample IDs. Missing values should be coded as <code>NA</code>.</li>
                       <li><strong>Reference IDs:</strong> A two-column .txt file with population labels. Header example: <code>Group1</code>, <code>Group2</code>.</li>
                       <li><strong>Validation Genotypes:</strong> Same format as the reference genotype file.</li>
                     </ul>
