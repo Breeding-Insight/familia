@@ -74,8 +74,8 @@ mod_ped_cleaner_ui <- function(id) {
                   <ul>
                     <li>Upload a tab-separated <code>.txt</code>, <code>.tsv</code>, or <code>.csv</code> pedigree file.</li>
                     <li>Required columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
-                    <li>Click <strong>Run Pedigree Check</strong> to detect and fix issues.</li>
-                    <li>Issues detected and corrected:</li>
+                    <li>Click <strong>Run Pedigree Check</strong> to detect issues.</li>
+                    <li>Issues detected:</li>
                     <ul>
                       <li><strong>Exact Duplicates</strong> — fully identical rows are removed.</li>
                       <li><strong>Conflicting IDs</strong> — same ID with different parents; ambiguous parent set to 0.</li>
@@ -264,7 +264,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       border_color <- if (total == 0) "#c3e6cb" else "#ffeeba"
       text_color   <- if (total == 0) "#155724"  else "#856404"
       headline     <- if (total == 0) "No issues found. Pedigree looks clean!" else
-        paste0(total, " issue(s) detected and corrected. Review the Issue Tables tab.")
+        paste0(total, " issue(s) detected. Review the Issue Tables tab.")
       
       shiny::HTML(paste0(
         "<div style='background-color:", banner_color, "; border: 1px solid ", border_color,
