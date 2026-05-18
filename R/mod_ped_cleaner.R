@@ -72,7 +72,7 @@ mod_ped_cleaner_ui <- function(id) {
               shiny::fluidRow(
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
-                    <li>Upload a tab-separated <code>.txt</code>, <code>.tsv</code>, or <code>.csv</code> pedigree file.</li>
+                    <li>Upload a tab-separated <code>.txt</code> or <code>.tsv</code> pedigree file, or a comma-separated <code>.csv</code> pedigree file.</li>
                     <li>Required columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
                     <li>Click <strong>Run Pedigree Check</strong> to detect issues.</li>
                     <li>Issues detected:</li>
