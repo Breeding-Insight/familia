@@ -208,6 +208,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         
         # Correction 3: write ped_raw to a known-extension temp file 
         tmp_ped_path <- tempfile(fileext = ".txt")
+        on.exit(unlink(tmp_ped_path), add = TRUE)
         write.table(ped_raw, tmp_ped_path,
                     sep = "\t", row.names = FALSE, quote = FALSE)
         
