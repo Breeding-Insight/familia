@@ -111,8 +111,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         "<strong>Review</strong> the Cross-Entropy, Ancestry Plot, Q Matrix, and Logs tabs."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Export</strong> the Q matrix as <code>.csv</code>, cross-entropy as <code>.csv</code>,
-         or the full LEA project as a <code>.zip</code>."
+        "<strong>Export</strong> the Q matrix as <code>.csv</code>or cross-entropy as <code>.csv</code>."
       ))
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -279,10 +278,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         "<code>Download cross-entropy (CSV)</code> — full cross-entropy table across all
          K values and repetitions (only available when cross-entropy is enabled)."
       )),
-      shiny::tags$li(shiny::HTML(
-        "<code>Save Project (.zip)</code> — complete LEA project directory, allowing you
-         to reload results in R using <code>LEA::load.snmfProject()</code>."
-      )),
+
       shiny::tags$li(shiny::HTML(
         "<code>Save Image</code> — exports the Cross-Entropy Plot or Ancestry Plot as
          <code>jpeg</code>, <code>tiff</code>, <code>png</code>, or <code>svg</code>
