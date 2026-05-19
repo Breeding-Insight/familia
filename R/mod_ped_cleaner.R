@@ -1,4 +1,3 @@
-
 #' Pedigree Cleaner module UI
 #'
 #' @param id Module id
@@ -10,7 +9,7 @@ mod_ped_cleaner_ui <- function(id) {
     shinyjs::useShinyjs(),
     shiny::fluidRow(
       
-      # Column 1: Inputs 
+      # Column 1: Inputs
       shiny::column(
         width = 3,
         bs4Dash::box(
@@ -54,7 +53,7 @@ mod_ped_cleaner_ui <- function(id) {
         )  # closes box
       ),  # closes column(width = 3)
       
-      # Column 2: Results 
+      # Column 2: Results
       shiny::column(
         width = 6,
         bs4Dash::box(
@@ -103,7 +102,7 @@ mod_ped_cleaner_ui <- function(id) {
         )  # closes box
       ),  # closes column(width = 6)
       
-      # Column 3: Status 
+      # Column 3: Status
       shiny::column(
         width = 3,
         bs4Dash::box(
@@ -126,7 +125,6 @@ mod_ped_cleaner_ui <- function(id) {
   )    # closes tagList
 }
 
-
 #' Pedigree Cleaner module server
 #'
 #' @param id Module id
@@ -138,7 +136,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
     
     check_results <- shiny::reactiveVal(NULL)
     
-    # Help button 
+    # Help button
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
@@ -151,11 +149,11 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       )
     })
     
-    # Run check 
+    # Run check
     shiny::observeEvent(input$run_check, {
       shiny::req(input$ped_file)
       check_results(NULL)
-      shinyjs::disable("download_results")          # ← un-namespaced; shinyjs handles it
+      shinyjs::disable("download_results")
       
       tryCatch({
         shinyWidgets::updateProgressBar(
@@ -206,7 +204,6 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           title = "Detecting cycles and dependencies..."
         )
         
-        # Correction 3: write ped_raw to a known-extension temp file 
         tmp_ped_path <- tempfile(fileext = ".txt")
         on.exit(unlink(tmp_ped_path), add = TRUE)
         write.table(ped_raw, tmp_ped_path,
@@ -218,10 +215,9 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           save_zip = FALSE
         )
         
-        # Correction 4: retrieve corrected pedigree from check_ped return 
-        # Use the session-local report value instead of reaching into .GlobalEnv
+        # Use corrected_pedigree — the field returned by the latest check_ped [7]
         corrected_ped <- tryCatch(
-          report$corrected_ped,
+          report$corrected_pedigree,
           error = function(e) NULL
         )
         
@@ -235,7 +231,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           value = 100, status = "success",
           title = "Finished"
         )
-        shinyjs::enable("download_results")          # ← un-namespaced; shinyjs handles it
+        shinyjs::enable("download_results")
         
         shiny::updateTabsetPanel(session, "ped_results_tabs", selected = "Summary")
         
@@ -248,7 +244,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       })
     })
     
-    # Summary banner 
+    # Summary banner
     output$summary_banner <- shiny::renderUI({
       shiny::req(check_results())
       report <- check_results()$report
@@ -256,7 +252,8 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       get_count <- function(df) if (is.null(df) || !is.data.frame(df)) 0L else nrow(df)
       n_dupes    <- get_count(report$exact_duplicates)
       n_conflict <- get_count(report$repeated_ids_diff)
-      n_messy    <- get_count(report$inconsistent_sex_roles)
+      # use messy_parents from check_ped return [7]; label stays "inconsistent sex roles"
+      n_messy    <- get_count(report$messy_parents)
       n_missing  <- get_count(report$missing_parents)
       n_cycles   <- get_count(report$dependencies)
       total      <- n_dupes + n_conflict + n_messy + n_missing + n_cycles
@@ -282,7 +279,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       ))
     })
     
-    # Results UI 
+    # Results UI
     output$results_ui <- shiny::renderUI({
       shiny::req(check_results())
       report <- check_results()$report
@@ -328,7 +325,8 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       
       render_if("Exact Duplicates Removed",       report$exact_duplicates)
       render_if("Conflicting IDs Resolved",       report$repeated_ids_diff)
-      render_if("Inconsistent Parent Sex Roles",  report$inconsistent_sex_roles)
+      # user-facing label stays "Inconsistent Parent Sex Roles"; data from messy_parents [7]
+      render_if("Inconsistent Parent Sex Roles",  report$messy_parents)
       render_if("Missing Parents Added",          report$missing_parents)
       render_if("Cycles / Dependencies Detected", report$dependencies)
       
@@ -337,11 +335,12 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           shiny::tagList(shiny::icon("list-check"), " Check Results"),
           style = "font-weight: bold; margin-bottom: 10px;"
         ),
-        make_section("Exact Duplicates Removed",       "copy",        report$exact_duplicates,       "#6c757d"),
-        make_section("Conflicting IDs Resolved",       "exclamation", report$repeated_ids_diff,      "#856404"),
-        make_section("Inconsistent Parent Sex Roles",  "shuffle",     report$inconsistent_sex_roles, "#856404"),
-        make_section("Missing Parents Added",          "user-plus",   report$missing_parents,        "#0c5460"),
-        make_section("Cycles / Dependencies Detected", "rotate",      report$dependencies,           "#721c24")
+        make_section("Exact Duplicates Removed",       "copy",        report$exact_duplicates,  "#6c757d"),
+        make_section("Conflicting IDs Resolved",       "exclamation", report$repeated_ids_diff, "#856404"),
+        # user-facing label stays "Inconsistent Parent Sex Roles"; data from messy_parents [7]
+        make_section("Inconsistent Parent Sex Roles",  "shuffle",     report$messy_parents,     "#856404"),
+        make_section("Missing Parents Added",          "user-plus",   report$missing_parents,   "#0c5460"),
+        make_section("Cycles / Dependencies Detected", "rotate",      report$dependencies,      "#721c24")
       )
     })
     
@@ -367,7 +366,8 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         sections <- list(
           exact_duplicates       = report$exact_duplicates,
           conflicting_ids        = report$repeated_ids_diff,
-          inconsistent_sex_roles = report$inconsistent_sex_roles,
+          # key stays inconsistent_sex_roles so the output filename matches help docs [5]
+          inconsistent_sex_roles = report$messy_parents,
           missing_parents        = report$missing_parents,
           dependencies           = report$dependencies
         )

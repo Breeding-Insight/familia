@@ -113,15 +113,16 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
         "<strong>Upload Reference Genotypes</strong> — a tab-separated <code>.txt</code> file with
-         SNPs in rows and samples in columns. The first column must be <code>ID</code>.
-         Missing values should be coded as <code>NA</code>."
+  samples in rows and SNP markers in columns. The first column must be <code>ID</code>.
+  Missing values should be coded as <code>NA</code>."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload Reference IDs</strong> — a tab-separated <code>.txt</code> file assigning
-         each reference sample to a group/line. Each column is one group; values are sample IDs."
+  each reference sample to a group/line. Each column is one group; values are sample IDs."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Validation Genotypes</strong> — same format as the reference genotype file."
+        "<strong>Upload Validation Genotypes</strong> — same format as the reference genotype file
+  (samples in rows, SNP markers in columns, first column named <code>ID</code>)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Set Ploidy</strong> — enter the ploidy level of the species (e.g., 2 for diploid, 4 for tetraploid)."

@@ -12,15 +12,16 @@ app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
-    # ── Sidebar color theme ──────────────────────────────────────────────────────
+    
     # Dynamic sidebar color theme — only sets the :root CSS variables
     # Available options: "azure", "green", "yellow", "grey", "purple", "red"
     # Change this value to switch the active sidebar menu item color.
-    # ─────────────────────────────────────────────────────────────────────────────
+
     tags$head(tags$style(HTML(sprintf(
       ":root { --sidebar-core: var(--%s-core); --sidebar-lite: var(--%s-lite); --sidebar-deep: var(--%s-deep); }",
       "green", "green", "green"
     )))),
+    
     # Your application UI logic
     bs4DashPage(
       skin = "black",
@@ -53,7 +54,7 @@ app_ui <- function(request) {
           )
         )
       ),
-      help = NULL, #This is the default bs4Dash button to control the presence of tooltips and popovers, which can be added as a user help/info feature.
+      help = NULL,
       bs4DashSidebar(
         skin          = "light",
         status        = "warning",
@@ -69,8 +70,8 @@ app_ui <- function(request) {
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Breed/Line Composition"),
           menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
           menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
-          # ── Genomic Diversity tab intentionally removed ──────────────────────
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
+
+                    tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
           menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
           menuItem("Help", tabName = "help", icon = icon("circle-question"))
         )
@@ -99,7 +100,7 @@ app_ui <- function(request) {
         )
       ),
       dashboardBody(
-        disconnectMessage(), #Adds generic error message for any error if not already accounted for
+        disconnectMessage(),
         tags$style(
           HTML(
             ".main-footer {
@@ -163,7 +164,6 @@ golem_add_external_resources <- function() {
       /* Make collapse/expand icons visible on white box headers */
       .card-tools .btn-tool { color: #495057 !important; }
       .card-tools .btn-tool:hover { color: #212529 !important; }
-    "))
-    # ── Tab-sync script removed: handler already defined in custom.js ────────
+    ")),
   )
 }
