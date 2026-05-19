@@ -252,8 +252,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       get_count <- function(df) if (is.null(df) || !is.data.frame(df)) 0L else nrow(df)
       n_dupes    <- get_count(report$exact_duplicates)
       n_conflict <- get_count(report$repeated_ids_diff)
-      # use messy_parents from check_ped return [7]; label stays "inconsistent sex roles"
-      n_messy    <- get_count(report$messy_parents)
+      n_messy    <- get_count(report$inconsistent_sex_roles)
       n_missing  <- get_count(report$missing_parents)
       n_cycles   <- get_count(report$dependencies)
       total      <- n_dupes + n_conflict + n_messy + n_missing + n_cycles
@@ -325,8 +324,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       
       render_if("Exact Duplicates Removed",       report$exact_duplicates)
       render_if("Conflicting IDs Resolved",       report$repeated_ids_diff)
-      # user-facing label stays "Inconsistent Parent Sex Roles"; data from messy_parents [7]
-      render_if("Inconsistent Parent Sex Roles",  report$messy_parents)
+      render_if("Inconsistent Parent Sex Roles",  report$inconsistent_sex_roles)
       render_if("Missing Parents Added",          report$missing_parents)
       render_if("Cycles / Dependencies Detected", report$dependencies)
       
@@ -337,8 +335,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         ),
         make_section("Exact Duplicates Removed",       "copy",        report$exact_duplicates,  "#6c757d"),
         make_section("Conflicting IDs Resolved",       "exclamation", report$repeated_ids_diff, "#856404"),
-        # user-facing label stays "Inconsistent Parent Sex Roles"; data from messy_parents [7]
-        make_section("Inconsistent Parent Sex Roles",  "shuffle",     report$messy_parents,     "#856404"),
+        make_section("Inconsistent Parent Sex Roles",  "shuffle",     report$inconsistent_sex_roles,     "#856404"),
         make_section("Missing Parents Added",          "user-plus",   report$missing_parents,   "#0c5460"),
         make_section("Cycles / Dependencies Detected", "rotate",      report$dependencies,      "#721c24")
       )
@@ -366,8 +363,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         sections <- list(
           exact_duplicates       = report$exact_duplicates,
           conflicting_ids        = report$repeated_ids_diff,
-          # key stays inconsistent_sex_roles so the output filename matches help docs [5]
-          inconsistent_sex_roles = report$messy_parents,
+          inconsistent_sex_roles = report$inconsistent_sex_roles,
           missing_parents        = report$missing_parents,
           dependencies           = report$dependencies
         )
