@@ -164,6 +164,6 @@ golem_add_external_resources <- function() {
       /* Make collapse/expand icons visible on white box headers */
       .card-tools .btn-tool { color: #495057 !important; }
       .card-tools .btn-tool:hover { color: #212529 !important; }
-    ")),
+    "))
   )
 }
