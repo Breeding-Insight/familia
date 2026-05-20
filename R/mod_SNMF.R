@@ -149,7 +149,7 @@ mod_SNMF_ui <- function(id) {
         bs4Dash::box(
           title       = "Plot Controls",
           width       = 12,
-          status      = "warning",
+          status      = "info",
           solidHeader = TRUE,
           collapsible = TRUE,
           shiny::uiOutput(ns("snmf_selectors_ui")),

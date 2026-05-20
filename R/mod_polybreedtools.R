@@ -112,13 +112,12 @@ mod_polybreedtools_ui <- function(id) {
           width       = 12,
           collapsible = TRUE,
           status      = "info",
-          solidHeader = TRUE,
           shiny::verbatimTextOutput(ns("status"))
         ),
         box(
           title       = "Plot Controls",
           width       = 12,
-          status      = "warning",
+          status      = "info",
           solidHeader = TRUE,
           collapsible = TRUE,
           selectInput(ns("color_choice"), "Color Palette",
