@@ -16,7 +16,6 @@ Description: This R shiny app provides a web-based user friendly way for researc
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Depends: R (>= 4.4.0)
 biocViews:
 Imports: 
@@ -33,9 +32,11 @@ Imports:
     shinyWidgets,
     shinydisconnect,
     shinyjs,
-    RColorBrewer
+    RColorBrewer,
+    zip
 Suggests:
     LEA,
     spelling,
     testthat
 Language: en-US
+Config/roxygen2/version: 8.0.0

@@ -83,20 +83,20 @@ mod_Home_ui <- function(id){
                    width = 11
                  ),
                  style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
-               ),
-               a(
-                 href = "https://scribehow.com/page/BIGapp_Tutorials__FdLsY9ZxQsi6kgT9p-U2Zg",  # Replace with your desired URL
-                 target = "_blank",  # Optional: opens the link in a new tab
-                 valueBox(
-                   value = NULL,
-                   subtitle = "BIGapp Tutorials",
-                   icon = icon("compass"),
-                   color = "warning",
-                   gradient = TRUE,
-                   width = 11
-                 ),
-                 style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
-               )
+               )#,
+               #a(
+                # href = "https://scribehow.com/page/BIGapp_Tutorials__FdLsY9ZxQsi6kgT9p-U2Zg",  # Replace with your desired URL
+                # target = "_blank",  # Optional: opens the link in a new tab
+                # valueBox(
+                #   value = NULL,
+                #   subtitle = "BIGapp Tutorials",
+                #   icon = icon("compass"),
+                #   color = "warning",
+                #   gradient = TRUE,
+                #   width = 11
+                # ),
+                # style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
+               #)
         )
       )
     )

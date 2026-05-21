@@ -1,64 +1,138 @@
-#' help UI Function
+# mod_help.R
+
+#' Help module UI
 #'
-#' @description A shiny Module.
-#'
-#' @param id,input,output,session Internal parameters for {shiny}.
+#' @param id Module id
 #'
 #' @noRd
-#'
-#' @importFrom shiny NS tagList includeMarkdown
-mod_help_ui <- function(id){
-  ns <- NS(id)
-  tagList(
-    fluidPage(
-      column(width=12),
-      column(width=12,
-             box(title="Predictive Ability", id = "Predictive_Ability_box",width = 12, collapsible = TRUE, collapsed = TRUE, status = "info", solidHeader = TRUE,
-                 "This tab provides the predictive ability of a GBLUP model for each trait across all samples within a genomic dataset",
-                 br(), br(),
-                 bs4Dash::tabsetPanel(id = "Predictive_Ability_tabset",
-                                      tabPanel("Parameters description", value = "Predictive_Ability_par", br(),
-                                               includeMarkdown(system.file("help_files/Predictive_Ability_par.Rmd", package = "BIGapp"))
-                                      ),
-                                      tabPanel("Results description", value = "Predictive_Ability_results", br(),
-                                               includeMarkdown(system.file("help_files/Predictive_Ability_res.Rmd", package = "BIGapp"))
-                                      ),
-                                      tabPanel("How to cite", value = "Predictive_Ability_cite", br(),
-                                               includeMarkdown(system.file("help_files/Predictive_Ability_cite.Rmd", package = "BIGapp"))
-                                      ))
-             ),
-             box(title="Genomic Prediction", id = "Genomic_Prediction_box",width = 12, collapsible = TRUE, collapsed = TRUE, status = "info", solidHeader = TRUE,
-                 "his tab estimates the trait and estimated-breeding-values (EBVs) for either all individuals in a genomic dataset, or by training the model with one genomic dataset to predict the values in another.",
-                 br(), br(),
-                 bs4Dash::tabsetPanel(id = "Genomic_Prediction_tabset",
-                                      tabPanel("Parameters description", value = "Genomic_Prediction_par", br(),
-                                               includeMarkdown(system.file("help_files/Genomic_Prediction_par.Rmd", package = "BIGapp"))
-                                      ),
-                                      tabPanel("Results description", value = "Genomic_Prediction_results", br(),
-                                               includeMarkdown(system.file("help_files/Genomic_Prediction_res.Rmd", package = "BIGapp"))
-                                      ),
-                                      tabPanel("How to cite", value = "Genomic_Prediction_cite", br(),
-                                               includeMarkdown(system.file("help_files/Genomic_Prediction_cite.Rmd", package = "BIGapp"))
-                                      ))
-             ),
-      ),
-      column(width=2)
-      # Add Help content here
+mod_help_ui <- function(id) {
+  ns <- shiny::NS(id)
+  shiny::tagList(
+    shiny::fluidRow(
+      shiny::column(
+        width = 12,
+        shiny::div(
+          style = "padding: 20px;",
+          shiny::div(
+            style = "text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #17a2b8;",
+            shiny::tags$h2("Help Documentation", style = "color: #17a2b8; margin-bottom: 10px;"),
+            shiny::tags$p("Click a module to expand its help section.",
+                          style = "color: #666; font-size: 16px;")
+          ),
+          shiny::uiOutput(ns("help_accordion"))
+        )
+      )
     )
   )
 }
 
-#' help Server Functions
+#' Help module server
+#'
+#' @param id Module id
+#' @param parent_session Parent (app) session
 #'
 #' @noRd
-mod_help_server <- function(input, output, session, parent_session){
-
-  ns <- session$ns
-
+mod_help_server <- function(id, parent_session = NULL) {
+  shiny::moduleServer(id, function(input, output, session) {
+    
+    # ── Top-level accordion panel builder ─────────────────────────────────
+    make_top_panel <- function(panel_id, icon_name, label, body_content) {
+      shiny::tags$div(
+        style = "margin-bottom: 8px;",
+        shiny::tags$div(
+          style = "background-color: #17a2b8; border-radius: 6px; overflow: hidden;",
+          shiny::tags$button(
+            class           = "btn w-100 text-left d-flex align-items-center justify-content-between",
+            style           = "color: white; font-size: 15px; font-weight: 600; padding: 14px 18px; background: none; border: none;",
+            `data-toggle`   = "collapse",
+            `data-target`   = paste0("#top_", panel_id),
+            `aria-expanded` = "false",
+            shiny::tags$span(
+              shiny::tagList(
+                shiny::icon(icon_name),
+                shiny::tags$span(label, style = "margin-left: 8px;")
+              )
+            ),
+            shiny::tags$span("+", style = "font-size: 20px; font-weight: bold;")
+          )
+        ),
+        shiny::tags$div(
+          id    = paste0("top_", panel_id),
+          class = "collapse",
+          shiny::tags$div(
+            style = "border: 1px solid #17a2b8; border-top: none; border-radius: 0 0 6px 6px; padding: 16px;",
+            body_content
+          )
+        )
+      )
+    }
+    
+    # ── Inner collapse panel builder (passed down to help_content_* fns) ──
+    make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
+      shiny::tags$div(
+        class = "card mb-1",
+        style = "border: 1px solid #dee2e6; border-radius: 4px;",
+        shiny::tags$div(
+          class = "card-header p-0",
+          style = "background-color: #f8f9fa;",
+          shiny::tags$button(
+            class           = "btn btn-link btn-sm w-100 text-left d-flex align-items-center",
+            style           = "color: #343a40; text-decoration: none; font-size: 13px; padding: 8px 12px; gap: 6px;",
+            `data-toggle`   = "collapse",
+            `data-target`   = paste0("#", panel_id),
+            `aria-expanded` = "false",
+            shiny::icon(icon_name),
+            shiny::tags$span(label)
+          )
+        ),
+        shiny::tags$div(
+          id    = panel_id,
+          class = "collapse",
+          shiny::tags$div(
+            class = "card-body",
+            style = "padding: 12px 14px; font-size: 13px;",
+            body_content
+          )
+        )
+      )
+    }
+    
+    # ── Render accordion ───────────────────────────────────────────────────
+    output$help_accordion <- shiny::renderUI({
+      shiny::tagList(
+        
+        make_top_panel(
+          panel_id     = "ped_cleaner",
+          icon_name    = "sitemap",
+          label        = "Pedigree Cleaner",
+          body_content = help_content_ped_cleaner(
+            collapse_fn = make_collapse_panel,
+            id_prefix   = "page"
+          )
+        ),
+        
+        make_top_panel(
+          panel_id     = "polybreedtools",
+          icon_name    = "chart-column",
+          label        = HTML("BreedTools<sup>poly</sup>"),
+          body_content = help_content_polybreedtools(
+            collapse_fn = make_collapse_panel,
+            id_prefix   = "page"
+          )
+        ),
+        
+        make_top_panel(
+          panel_id     = "snmf",
+          icon_name    = "list-ol",
+          label        = "SNMF",
+          body_content = help_content_SNMF(
+            collapse_fn = make_collapse_panel,
+            id_prefix   = "page"
+          )
+        )
+        
+      )
+    })
+    
+  })
 }
-
-## To be copied in the UI
-# mod_help_ui("help_1")
-
-## To be copied in the server
-# mod_help_server("help_1")

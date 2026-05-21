@@ -19,10 +19,12 @@ app_server <- function(input, output, session) {
   callModule(mod_SNMF_server,
              "SNMF_1",
              parent_session = session)
-  callModule(mod_diversity_server,
-             "diversity_1",
-             parent_session = session)
-
+  mod_ped_cleaner_server(
+    "ped_cleaner_1", 
+    parent_session = session)
+  mod_help_server(
+    "help_1",
+    parent_session = session) 
   # mod_DosageCall_server("DosageCall_1")
   # mod_Filtering_server("Filtering_1")
   # mod_dosage2vcf_server("dosage2vcf_1")

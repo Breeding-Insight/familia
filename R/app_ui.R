@@ -12,6 +12,16 @@ app_ui <- function(request) {
   tagList(
     # Leave this function for adding external resources
     golem_add_external_resources(),
+    
+    # Dynamic sidebar color theme — only sets the :root CSS variables
+    # Available options: "azure", "green", "yellow", "grey", "purple", "red"
+    # Change this value to switch the active sidebar menu item color.
+
+    tags$head(tags$style(HTML(sprintf(
+      ":root { --sidebar-core: var(--%s-core); --sidebar-lite: var(--%s-lite); --sidebar-deep: var(--%s-deep); }",
+      "green", "green", "green"
+    )))),
+    
     # Your application UI logic
     bs4DashPage(
       skin = "black",
@@ -22,56 +32,53 @@ app_ui <- function(request) {
         rightUi = tags$li(
           class = "dropdown",
           tags$a(
-            href = "#",
-            class = "nav-link",
+            href          = "#",
+            class         = "nav-link",
             `data-toggle` = "dropdown",
             icon("info-circle")
           ),
           tags$div(
             class = "dropdown-menu dropdown-menu-right",
             tags$a(
-              class = "dropdown-item",
-              href = "#",
+              class   = "dropdown-item",
+              href    = "#",
               "Session Info",
               onclick = "Shiny.setInputValue('session_info_button', Math.random())"
             ),
             tags$a(
-              class = "dropdown-item",
-              href = "#",
+              class   = "dropdown-item",
+              href    = "#",
               "Check for Updates",
               onclick = "Shiny.setInputValue('updates_info_button', Math.random())"
             )
           )
         )
       ),
-      help = NULL, #This is the default bs4Dash button to control the presence of tooltips and popovers, which can be added as a user help/info feature.
+      help = NULL,
       bs4DashSidebar(
-        skin="light",
-        status = "warning",
-        fixed=TRUE,
-        #minified = F,
+        skin          = "light",
+        status        = "warning",
+        fixed         = TRUE,
         expandOnHover = TRUE,
-        sidebarMenu(id = "MainMenu",
+        sidebarMenu(
+          id   = "MainMenu",
           flat = FALSE,
           tags$li(class = "header", style = "color: grey; margin-top: 10px; margin-bottom: 10px; padding-left: 15px;", "Menu"),
-                   menuItem("Home", tabName = "welcome", icon = icon("house"),startExpanded = FALSE),
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Unsupervised"),
-                   menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Supervised"),
-                   menuItem("PolyBreedTools", tabName = "polybreedtools", icon = icon("share-from-square")),
-                   menuItem("Genomic Diversity", tabName = "diversity", icon = icon("chart-pie")),
-          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
-          menuItem("Source Code", icon = icon("circle-info"), href = "https://www.github.com/Breeding-Insight/Genomics_Shiny_App"),
-          #menuItem(
-          #  span("Job Queue", bs4Badge("demo", position = "right", color = "warning")),
-          #  tabName = "slurm",
-          #  icon = icon("clock")),
+          menuItem("Home", tabName = "welcome", icon = icon("house"), startExpanded = FALSE),
+          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Pedigree & Parentage"),
+          menuItem("Pedigree Cleaner", tabName = "ped_cleaner", icon = icon("sitemap")),
+          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Breed/Line Composition"),
+          menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
+          menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
+
+                    tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
+          menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
           menuItem("Help", tabName = "help", icon = icon("circle-question"))
         )
       ),
       footer = dashboardFooter(
         right = div(
-          style = "display: flex; align-items: center;",  # Align text and images horizontally
+          style = "display: flex; align-items: center;",
           div(
             style = "display: flex; flex-direction: column; margin-right: 15px; text-align: right;",
             div("2026 Breeding Insight"),
@@ -88,24 +95,24 @@ app_ui <- function(request) {
           )
         ),
         left = div(
-          style = "display: flex; align-items: center; height: 100%;",  
+          style = "display: flex; align-items: center; height: 100%;",
           sprintf("v%s", as.character(utils::packageVersion("familia")))
         )
       ),
       dashboardBody(
-        disconnectMessage(), #Adds generic error message for any error if not already accounted for
+        disconnectMessage(),
         tags$style(
           HTML(
             ".main-footer {
-            background-color: white;
-            color: grey;
-            height: 65px;
-            padding-top: 5px;
-            padding-bottom: 5px;
-          }
-          .main-footer a {
-            color: grey;
-          }"
+              background-color: white;
+              color: grey;
+              height: 65px;
+              padding-top: 5px;
+              padding-bottom: 5px;
+            }
+            .main-footer a {
+              color: grey;
+            }"
           )
         ),
         tabItems(
@@ -113,13 +120,13 @@ app_ui <- function(request) {
             tabName = "welcome", mod_Home_ui("Home_1")
           ),
           tabItem(
+            tabName = "ped_cleaner", mod_ped_cleaner_ui("ped_cleaner_1")
+          ),
+          tabItem(
             tabName = "polybreedtools", mod_polybreedtools_ui("PolyBreedTools_1")
           ),
           tabItem(
             tabName = "snmf", mod_SNMF_ui("SNMF_1")
-          ),
-          tabItem(
-            tabName = "diversity", mod_diversity_ui("diversity_1")
           ),
           tabItem(
             tabName = "help", mod_help_ui("help_1")
@@ -143,14 +150,20 @@ golem_add_external_resources <- function() {
     "www",
     app_sys("app/www")
   )
-
   tags$head(
     favicon(),
     bundle_resources(
-      path = app_sys("app/www"),
+      path      = app_sys("app/www"),
       app_title = "familia"
-    )
+    ),
     # Add here other external resources
     # for example, you can add shinyalert::useShinyalert()
+    tags$style(HTML("
+      /* Ensure box collapse/expand buttons are always on top */
+      .card-tools { position: relative; z-index: 10; }
+      /* Make collapse/expand icons visible on white box headers */
+      .card-tools .btn-tool { color: #495057 !important; }
+      .card-tools .btn-tool:hover { color: #212529 !important; }
+    "))
   )
 }
