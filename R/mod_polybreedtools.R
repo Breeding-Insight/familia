@@ -334,7 +334,6 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     })
   })
   #  Ancestry plot
-  #  Ancestry plot
   ancestry_plot <- reactive({
     req(poly_items$pred_results_long, poly_items$id_order)
     dat <- poly_items$pred_results_long

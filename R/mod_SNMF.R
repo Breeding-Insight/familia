@@ -449,7 +449,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       long$ID <- factor(long$ID, levels = unique(df$ID))
     }
 
-    #  Palette fix: brewer pallete allows up to 9 colors but we need 10
+    #  Palette fix: brewer palete allows up to 9 colors but we need 10
     palette_name <- input$snmf_color_choice %||% "Set1"
     palette_info <- RColorBrewer::brewer.pal.info[palette_name, , drop = FALSE]
     max_colors   <- palette_info$maxcolors[[1]]
