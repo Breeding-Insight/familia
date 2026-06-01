@@ -57,46 +57,59 @@ mod_Home_ui <- function(id){
                  style = "overflow-y: auto; height: 500px"
                )
         ),
-        column(width = 4,
-               a(
-                 href = "https://www.breedinginsight.org",  # Replace with your desired URL
-                 target = "_blank",  # Optional: opens the link in a new tab
-                 valueBox(
-                   value = NULL,
-                   subtitle = "Learn More About Breeding Insight",
-                   icon = icon("link"),
-                   color = "purple",
-                   gradient = TRUE,
-                   width = 11
-                 ),
-                 style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
-               ),
-               a(
-                 href = "https://breedinginsight.org/contact-us/",  # Replace with your desired URL
-                 target = "_blank",  # Optional: opens the link in a new tab
-                 valueBox(
-                   value = NULL,
-                   subtitle = "Contact Us",
-                   icon = icon("envelope"),
-                   color = "danger",
-                   gradient = TRUE,
-                   width = 11
-                 ),
-                 style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
-               )#,
-               #a(
-                # href = "https://scribehow.com/page/BIGapp_Tutorials__FdLsY9ZxQsi6kgT9p-U2Zg",  # Replace with your desired URL
-                # target = "_blank",  # Optional: opens the link in a new tab
-                # valueBox(
-                #   value = NULL,
-                #   subtitle = "BIGapp Tutorials",
-                #   icon = icon("compass"),
-                #   color = "warning",
-                #   gradient = TRUE,
-                #   width = 11
-                # ),
-                # style = "text-decoration: none; color: inherit;"  # Optional: removes underline and retains original color
-               #)
+        # Right section: links + Try the Breedverse box
+        shiny::column(width = 4,
+                      shiny::tags$a(
+                        href = "https://www.breedinginsight.org",
+                        target = "_blank",
+                        bs4Dash::valueBox(
+                          value = NULL,
+                          subtitle = "Learn More About Breeding Insight",
+                          icon = shiny::icon("link"),
+                          color = "purple",
+                          gradient = TRUE,
+                          width = 11
+                        ),
+                        style = "text-decoration: none; color: inherit;"
+                      ),
+                      shiny::tags$a(
+                        href = "https://breedinginsight.org/contact-us/",
+                        target = "_blank",
+                        bs4Dash::valueBox(
+                          value = NULL,
+                          subtitle = "Contact Us",
+                          icon = shiny::icon("envelope"),
+                          color = "danger",
+                          gradient = TRUE,
+                          width = 11
+                        ),
+                        style = "text-decoration: none; color: inherit;"
+                      ),
+                      shiny::tags$a(
+                       # href = "https://scribehow.com/viewer/...",
+                        target = "_blank",
+                        bs4Dash::valueBox(
+                          value = NULL,
+                          subtitle = "familia Tutorial",
+                          icon = shiny::icon("compass"),
+                          color = "info",
+                          gradient = TRUE,
+                          width = 11
+                        ),
+                        style = "text-decoration: none; color: inherit;"
+                      ),
+                      bs4Dash::box(
+                        title = "Try the Breedverse!", status = "warning", solidHeader = TRUE, width = 11, collapsible = FALSE,
+                        shiny::HTML(
+                          "We developed an R shiny interface where you can use ALL of our Breeding Insight applications in a single location. This
+                   includes applications like BIGapp, Qploidy, and GenoBrew, PLUS all of our newly released applications.
+                   Learn more and see install instructions here
+                    <div style='text-align: center; margin-top: 20px;'>
+                      <img src='www/breedverse_logo.png' alt='Breedingverse' style='width: 120px; height: 140px;'>
+                    </div>"
+                        ),
+                        style = "overflow-y: auto; height: 300px"
+                      )
         )
       )
     )
