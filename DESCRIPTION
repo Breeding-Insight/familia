@@ -37,8 +37,7 @@ Imports:
     shinyjs,
     RColorBrewer,
     zip,
-    data.table,
-    rlang
+    data.table
 Suggests:
     LEA,
     spelling,
