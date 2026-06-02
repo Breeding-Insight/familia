@@ -5,6 +5,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/pulls)
+[![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/familia?include_prereleases)](https://github.com/Breeding-Insight/familia/releases/latest)
 
 _familia_ is a Shiny web application developed by the Breeding Insight team
 to support pedigree validation and ancestry assessment of plant and animal
