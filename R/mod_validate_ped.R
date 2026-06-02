@@ -172,6 +172,9 @@ mod_validate_ped_ui <- function(id) {
 mod_validate_ped_server <- function(id, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
     
+    `%||%` <- function(x, y) if (is.null(x)) y else x
+    parentage_results <- shiny::reactiveVal(NULL)
+    
     validate_results <- shiny::reactiveVal(NULL)
     
     make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
