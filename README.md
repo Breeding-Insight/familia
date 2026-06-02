@@ -1,11 +1,17 @@
-# _familia_ — Pedigree Validation and Ancestry Assessment App
-
 [![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/pulls)
 [![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/familia?include_prereleases)](https://github.com/Breeding-Insight/familia/releases/latest)
+
+=======
+# _familia_  <img width="200" height="200" alt="familia_logo" src="https://github.com/user-attachments/assets/600951c0-65e5-4761-93a6-56d4c9a50ad0" align =right />
+
+
+### Pedigree Validation and Ancestry Assessment App
+
+</div>
 
 _familia_ is a Shiny web application developed by the Breeding Insight team
 to support pedigree validation and ancestry assessment of plant and animal
