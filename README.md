@@ -1,12 +1,18 @@
-# _familia_ — Pedigree Validation and Ancestry Assessment App
-
 [![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
-[![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/issues)
-[![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/pulls)
+[![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/issues)
+[![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/pulls)
+[![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/Familia?include_prereleases)](https://github.com/Breeding-Insight/Familia/releases/latest)
 
-_familia_ is a Shiny web application developed by the Breeding Insight team
+# _Familia_  <img width="200" height="200" alt="Familia_logo" src="https://github.com/user-attachments/assets/600951c0-65e5-4761-93a6-56d4c9a50ad0" align =right />
+
+
+### Pedigree Validation and Ancestry Assessment App
+
+</div>
+
+_Familia_ is a Shiny web application developed by the Breeding Insight team
 to support pedigree validation and ancestry assessment of plant and animal
 populations. The app integrates Mendelian error analysis, parentage assignment,
 supervised ancestry estimation, and unsupervised ancestry inference to help
@@ -20,7 +26,7 @@ This repository follows a golem-based application structure.
 ## Overview
 
 Accurate pedigree records and ancestry information are foundational to
-modern breeding programs. _familia_ provides an interactive and reproducible
+modern breeding programs. _Familia_ provides an interactive and reproducible
 framework for:
 
 - Detecting and correcting structural pedigree errors before downstream analysis
@@ -78,7 +84,7 @@ range of plant and animal breeding programs.
 
 ## Installation and Running the App
 
-_familia_ uses a golem application structure, allowing it to be installed
+_Familia_ uses a golem application structure, allowing it to be installed
 like a standard R package.
 
 ### Install from GitHub
@@ -87,16 +93,16 @@ like a standard R package.
 if (!requireNamespace("remotes", quietly = TRUE)) {
   install.packages("remotes")
 }
-remotes::install_github("Breeding-Insight/familia")
+remotes::install_github("Breeding-Insight/Familia")
 ```
 
-### Run familia
+### Run Familia
 ```r
-familia::run_app()
+Familia::run_app()
 ```
 
 ### Dependencies
-Key R packages used by _familia_ include:
+Key R packages used by _Familia_ include:
 
 * shiny
 * BIGr
@@ -110,10 +116,10 @@ Key R packages used by _familia_ include:
 * LEA (required for SNMF-based ancestry inference)
 ---
 ## Citation
-If you use _familia_ in research, please cite it as:
+If you use _Familia_ in research, please cite it as:
 
 * Chinchilla-Vargas, J., & Sandercock, A. M.
-familia: Pedigree Validation and Ancestry Assessment Shiny App.
+Familia: Pedigree Validation and Ancestry Assessment Shiny App.
 RRID:
 
 ### Also Cite for the methods used:
@@ -132,11 +138,11 @@ Test changes before submitting pull requests
 Submit issues and pull requests via GitHub.
 
 ## License
-_familia_ is released under the Apache License, Version 2.0.
+_Familia_ is released under the Apache License, Version 2.0.
 See the LICENSE file or https://www.apache.org/licenses/LICENSE-2.0 for details.
 
 # Acknowledgments
-_familia_ is developed as part of the Breeding Insight initiative
+_Familia_ is developed as part of the Breeding Insight initiative
 (https://www.breedinginsight.org) to provide open-source, data-driven tools
 for modern breeding programs.
 ```
