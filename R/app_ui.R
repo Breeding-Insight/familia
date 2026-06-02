@@ -10,19 +10,11 @@
 #' @noRd
 app_ui <- function(request) {
   tagList(
-    # Leave this function for adding external resources
     golem_add_external_resources(),
-    
-    # Dynamic sidebar color theme — only sets the :root CSS variables
-    # Available options: "azure", "green", "yellow", "grey", "purple", "red"
-    # Change this value to switch the active sidebar menu item color.
-
     tags$head(tags$style(HTML(sprintf(
       ":root { --sidebar-core: var(--%s-core); --sidebar-lite: var(--%s-lite); --sidebar-deep: var(--%s-deep); }",
       "green", "green", "green"
     )))),
-    
-    # Your application UI logic
     bs4DashPage(
       skin = "black",
       bs4DashNavbar(
@@ -52,9 +44,9 @@ app_ui <- function(request) {
               onclick = "Shiny.setInputValue('updates_info_button', Math.random())"
             )
           )
-        )
+        ),
+        help = NULL
       ),
-      help = NULL,
       bs4DashSidebar(
         skin          = "light",
         status        = "warning",
@@ -66,12 +58,13 @@ app_ui <- function(request) {
           tags$li(class = "header", style = "color: grey; margin-top: 10px; margin-bottom: 10px; padding-left: 15px;", "Menu"),
           menuItem("Home", tabName = "welcome", icon = icon("house"), startExpanded = FALSE),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Pedigree & Parentage"),
-          menuItem("Pedigree Cleaner", tabName = "ped_cleaner", icon = icon("sitemap")),
+          menuItem("Pedigree Cleaner",    tabName = "ped_cleaner",    icon = icon("sitemap")),
+          menuItem("Validate Pedigree",   tabName = "validate_ped",   icon = icon("circle-check")),
+          menuItem("Find Parentage",      tabName = "find_parentage", icon = icon("people-arrows")),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Breed/Line Composition"),
           menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
           menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
-
-                    tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
+          tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
           menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
           menuItem("Help", tabName = "help", icon = icon("circle-question"))
         )
@@ -117,19 +110,25 @@ app_ui <- function(request) {
         ),
         tabItems(
           tabItem(
-            tabName = "welcome", mod_Home_ui("Home_1")
+            tabName = "welcome",       mod_Home_ui("Home_1")
           ),
           tabItem(
-            tabName = "ped_cleaner", mod_ped_cleaner_ui("ped_cleaner_1")
+            tabName = "ped_cleaner",   mod_ped_cleaner_ui("ped_cleaner_1")
+          ),
+          tabItem(
+            tabName = "validate_ped",  mod_validate_ped_ui("validate_ped_1")
+          ),
+          tabItem(
+            tabName = "find_parentage", mod_find_parentage_ui("find_parentage_1")
           ),
           tabItem(
             tabName = "polybreedtools", mod_polybreedtools_ui("PolyBreedTools_1")
           ),
           tabItem(
-            tabName = "snmf", mod_SNMF_ui("SNMF_1")
+            tabName = "snmf",          mod_SNMF_ui("SNMF_1")
           ),
           tabItem(
-            tabName = "help", mod_help_ui("help_1")
+            tabName = "help",          mod_help_ui("help_1")
           )
         )
       )
@@ -138,9 +137,6 @@ app_ui <- function(request) {
 }
 
 #' Add external Resources to the Application
-#'
-#' This function is internally used to add external
-#' resources inside the Shiny application.
 #'
 #' @import shiny
 #' @importFrom golem add_resource_path activate_js favicon bundle_resources
@@ -156,8 +152,6 @@ golem_add_external_resources <- function() {
       path      = app_sys("app/www"),
       app_title = "familia"
     ),
-    # Add here other external resources
-    # for example, you can add shinyalert::useShinyalert()
     tags$style(HTML("
       /* Ensure box collapse/expand buttons are always on top */
       .card-tools { position: relative; z-index: 10; }

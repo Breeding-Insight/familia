@@ -13,6 +13,7 @@
 mod_SNMF_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
+    shinyjs::useShinyjs(),
     shiny::fluidRow(
       shinydisconnect::disconnectMessage(
         text           = "An unexpected error occurred, please reload the application and check the input file(s).",
@@ -63,8 +64,9 @@ mod_SNMF_ui <- function(id) {
           ),
           shiny::actionButton(ns("snmf_run"), "Run SNMF"),
           shiny::hr(),
-          shiny::downloadButton(ns("download_q_csv"),  "Download Q (CSV)"),
-          shiny::downloadButton(ns("download_ce_csv"), "Download cross-entropy (CSV)"),
+          shinyjs::disabled(
+            shiny::downloadButton(ns("download_snmf_all"), "Download Results")
+          ),
           shiny::hr(),
           shiny::div(
             style = "text-align: center; margin-top: 5px;",
@@ -164,7 +166,7 @@ mod_SNMF_ui <- function(id) {
             ),
             selected = "Set1"
           ),
-          shiny::checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels",     value = TRUE),
+          shiny::checkboxInput(ns("snmf_show_sample_labels"), "Show sample labels",       value = TRUE),
           shiny::checkboxInput(ns("snmf_sort_by_cluster"),    "Sort by dominant cluster", value = FALSE),
           shiny::sliderInput(ns("snmf_label_size"), "Label size", min = 6, max = 14, value = 8, step = 1),
           shiny::div(
@@ -181,7 +183,7 @@ mod_SNMF_ui <- function(id) {
               status  = "danger",
               icon    = shiny::icon("floppy-disk"),
               width   = "300px",
-              label   = "Save",
+              label   = "Save Plot",
               tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
             )
           )
@@ -432,7 +434,6 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     )
     long$Cluster <- factor(long$Cluster, levels = q_cols)
     
-    # Sort by dominant cluster
     if (isTRUE(input$snmf_sort_by_cluster)) {
       q_wide           <- as.data.frame(q)
       dominant_cluster <- colnames(q_wide)[max.col(q_wide, ties.method = "first")]
@@ -448,15 +449,14 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     } else {
       long$ID <- factor(long$ID, levels = unique(df$ID))
     }
-
-    #  Palette fix: brewer palete allows up to 9 colors but we need 10
+    
     palette_name <- input$snmf_color_choice %||% "Set1"
     palette_info <- RColorBrewer::brewer.pal.info[palette_name, , drop = FALSE]
     max_colors   <- palette_info$maxcolors[[1]]
-    n_base       <- max(3L, max_colors)         # brewer.pal requires n >= 3
+    n_base       <- max(3L, max_colors)
     base_colors  <- RColorBrewer::brewer.pal(n_base, palette_name)
     fill_colors  <- grDevices::colorRampPalette(base_colors)(length(q_cols))
-
+    
     p <- ggplot2::ggplot(long, ggplot2::aes(x = ID, y = Q, fill = Cluster)) +
       ggplot2::geom_col(width = 0.9) +
       ggplot2::scale_fill_manual(values = fill_colors, drop = FALSE) +
@@ -524,6 +524,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     }
     entropy_enabled <- input$snmf_select_mode %in% c("auto_entropy", "manual_entropy")
     cleanup_run_dir()
+    
     state$run_dir         <- tempfile("snmf_", tmpdir = tempdir())
     run_ctx$run_dir       <- state$run_dir
     dir.create(state$run_dir, recursive = TRUE, showWarnings = FALSE)
@@ -539,6 +540,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     state$best_run_by_k   <- NULL
     state$sample_ids      <- NULL
     
+    shinyjs::disable("download_snmf_all")
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 5,  title = "Preparing input")
     set_status("Preparing input...\n")
     
@@ -684,28 +686,44 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 100, title = "Complete!")
     set_status("SNMF complete.\n")
+    shinyjs::enable("download_snmf_all")
   })
   
-  #  Downloads
-  output$download_q_csv <- shiny::downloadHandler(
-    filename = function() paste0("snmf_Q_K", selected_k(), "_run", selected_run(), "_", Sys.Date(), ".csv"),
-    content  = function(file) {
-      req(state$project)
+  #  Unified data download (Q CSV + cross-entropy CSV)
+  output$download_snmf_all <- shiny::downloadHandler(
+    filename = function() {
+      paste0("snmf_results_", Sys.Date(), ".zip")
+    },
+    content = function(file) {
+      shiny::req(state$project)
+      
+      tmp_dir <- tempfile("snmf_export")
+      dir.create(tmp_dir)
+      on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+      
+      # Q matrix CSV
       q  <- q_matrix()
       df <- data.frame(ID = rownames(q), q, check.names = FALSE)
-      utils::write.csv(df, file, row.names = FALSE)
-    }
+      utils::write.csv(df,
+                       file.path(tmp_dir, paste0("snmf_Q_K", selected_k(),
+                                                 "_run", selected_run(), ".csv")),
+                       row.names = FALSE)
+      
+      # Cross-entropy CSV (only if entropy was enabled)
+      if (isTRUE(state$entropy_enabled) && !is.null(state$ce_df)) {
+        utils::write.csv(state$ce_df,
+                         file.path(tmp_dir, "snmf_cross_entropy.csv"),
+                         row.names = FALSE)
+      }
+      
+      zip_files <- list.files(tmp_dir)
+      zip::zip(zipfile = file, files = zip_files, root = tmp_dir)
+      unlink(tmp_dir, recursive = TRUE)
+    },
+    contentType = "application/zip"
   )
   
-  output$download_ce_csv <- shiny::downloadHandler(
-    filename = function() paste0("snmf_cross_entropy_", Sys.Date(), ".csv"),
-    content  = function(file) {
-      req(state$project)
-      shiny::validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
-      utils::write.csv(state$ce_df %||% data.frame(), file, row.names = FALSE)
-    }
-  )
-  
+  #  Figure download (unchanged from original)
   output$download_snmf_figure <- shiny::downloadHandler(
     filename = function() {
       ext <- input$snmf_image_type %||% "jpeg"

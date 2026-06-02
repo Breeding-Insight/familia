@@ -78,15 +78,13 @@ mod_ped_cleaner_ui <- function(id) {
           shiny::hr(),
           shiny::actionButton(
             ns("run_check"),
-            "Run Pedigree Check",
-            style = "width: 100%; background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 5px;"
+            "Run Pedigree Check"
           ),
           shiny::hr(),
           shinyjs::disabled(
             shiny::downloadButton(
               ns("download_results"),
-              "Export Corrected Pedigree + Report",
-              style = "width: 100%; background-color: #28a745; color: white; border: none; padding: 10px; border-radius: 5px;"
+              "Download Results"
             )
           ),
           shiny::hr(),
@@ -256,13 +254,8 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           title = "Detecting cycles and dependencies..."
         )
         
-        tmp_ped_path <- tempfile(fileext = ".txt")
-        on.exit(unlink(tmp_ped_path), add = TRUE)
-        write.table(ped_raw, tmp_ped_path,
-                    sep = "\t", row.names = FALSE, quote = FALSE)
-        
         report <- BIGr::check_ped(
-          ped.file                       = tmp_ped_path,
+          ped.file                       = ped_raw,
           verbose                        = FALSE,
           correct_conflicting_trios      = input$correct_conflicting_trios,
           correct_inconsistent_sex_roles = input$correct_inconsistent_sex_roles
@@ -319,7 +312,6 @@ mod_ped_cleaner_server <- function(id, parent_session) {
       headline     <- if (total == 0) "No issues found. Pedigree looks clean!" else
         paste0(total, " issue(s) detected. Review the Issue Tables tab.")
       
-      # Build correction status message based on checkbox state [4]
       correction_msg <- if (do_trios && do_sex) {
         "Exact duplicates and missing parents always corrected. Conflicting trios and inconsistent sex roles will also be corrected for this run (check help for details)."
       } else if (do_trios && !do_sex) {
