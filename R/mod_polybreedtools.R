@@ -12,7 +12,9 @@
 mod_polybreedtools_ui <- function(id) {
   ns <- NS(id)
   tagList(
+    shinyjs::useShinyjs(),
     fluidRow(
+      
       #  Column 1: Inputs
       column(
         width = 3,
@@ -23,13 +25,15 @@ mod_polybreedtools_ui <- function(id) {
           collapsed   = FALSE,
           status      = "info",
           solidHeader = TRUE,
-          fileInput(ns("reference_file"), "Reference Genotypes (.txt)", accept = ".txt"),
-          fileInput(ns("ref_ids_file"), "Reference IDs (.txt)", accept = ".txt"),
-          fileInput(ns("validation_file"), "Validation Genotypes (.txt)", accept = ".txt"),
+          fileInput(ns("reference_file"), "Reference Genotypes", accept = ".txt"),
+          fileInput(ns("ref_ids_file"),   "Reference IDs",       accept = ".txt"),
+          fileInput(ns("validation_file"),"Validation Genotypes", accept = ".txt"),
           numericInput(ns("ploidy"), "Ploidy", value = 2, min = 1, max = 20, step = 1),
           actionButton(ns("run"), "Run Estimation"),
-          br(),
-          br(),
+          shiny::hr(),
+          shinyjs::disabled(
+            shiny::downloadButton(ns("download_poly_all"), "Download Results")
+          ),
           shiny::hr(),
           shiny::div(
             style = "text-align: center; margin-top: 5px;",
@@ -39,8 +43,9 @@ mod_polybreedtools_ui <- function(id) {
               style = "background-color: #FFD700; color: #000000; border:none; padding: 8px 16px; border-radius: 5px;"
             )
           )
-        )  # closes box
-      ),  # closes column(width = 3)
+        )
+      ),
+      
       #  Column 2: Results
       column(
         width = 6,
@@ -73,8 +78,8 @@ mod_polybreedtools_ui <- function(id) {
               ),
               style = "overflow-y: auto; height: 500px"
             ),
-            shiny::tabPanel("Results Table", DT::DTOutput(ns("preview")),                          style = "overflow-y: auto; height: 500px"),
-            shiny::tabPanel("Ancestry Plot", shiny::plotOutput(ns("bar_plot"), height = "450px"),  style = "overflow-y: auto; height: 500px")
+            shiny::tabPanel("Results Table", DT::DTOutput(ns("preview")),                         style = "overflow-y: auto; height: 500px"),
+            shiny::tabPanel("Ancestry Plot", shiny::plotOutput(ns("bar_plot"), height = "450px"), style = "overflow-y: auto; height: 500px")
           )
         ),
         box(
@@ -103,7 +108,8 @@ mod_polybreedtools_ui <- function(id) {
             )
           )
         )
-      ),  # closes column(width = 6)
+      ),
+      
       #  Column 3: Status + Plot Controls
       shiny::column(
         width = 3,
@@ -120,16 +126,18 @@ mod_polybreedtools_ui <- function(id) {
           status      = "info",
           solidHeader = TRUE,
           collapsible = TRUE,
-          selectInput(ns("color_choice"), "Color Palette",
-                      choices = list(
-                        "Standard Palettes"   = c("Set1","Set3","Pastel2","Pastel1","Accent","Spectral","RdYlGn","RdGy"),
-                        "Colorblind Friendly" = c("Set2","Paired","Dark2","YlOrRd","YlOrBr","YlGnBu","YlGn",
-                                                  "Reds","RdPu","Purples","PuRd","PuBuGn","PuBu","OrRd",
-                                                  "Oranges","Greys","Greens","GnBu","BuPu","BuGn","Blues",
-                                                  "RdYlBu","RdBu","PuOr","PRGn","PiYG","BrBG")
-                      ),
-                      selected = "Set1"),
-          checkboxInput(ns("poly_show_sample_labels"), "Show sample labels",    value = FALSE),
+          selectInput(
+            ns("color_choice"), "Color Palette",
+            choices = list(
+              "Standard Palettes"   = c("Set1","Set3","Pastel2","Pastel1","Accent","Spectral","RdYlGn","RdGy"),
+              "Colorblind Friendly" = c("Set2","Paired","Dark2","YlOrRd","YlOrBr","YlGnBu","YlGn",
+                                        "Reds","RdPu","Purples","PuRd","PuBuGn","PuBu","OrRd",
+                                        "Oranges","Greys","Greens","GnBu","BuPu","BuGn","Blues",
+                                        "RdYlBu","RdBu","PuOr","PRGn","PiYG","BrBG")
+            ),
+            selected = "Set1"
+          ),
+          checkboxInput(ns("poly_show_sample_labels"), "Show sample labels",     value = FALSE),
           checkboxInput(ns("poly_sort_by_predicted"),  "Sort by predicted line", value = TRUE),
           sliderInput(ns("poly_label_size"), "Label size", min = 6, max = 14, value = 8, step = 1),
           div(
@@ -142,23 +150,21 @@ mod_polybreedtools_ui <- function(id) {
               sliderInput(ns("poly_image_res"),    "Resolution (DPI)", value = 300, min = 50,  max = 1000, step = 50),
               sliderInput(ns("poly_image_width"),  "Width (in)",       value = 10,  min = 3,   max = 30,   step = 0.5),
               sliderInput(ns("poly_image_height"), "Height (in)",      value = 5,   min = 3,   max = 20,   step = 0.5),
-              fluidRow(
-                downloadButton(ns("download_poly_figure"), "Save Image"),
-                downloadButton(ns("download_poly_file"),   "Save Excel File")
-              ),
+              downloadButton(ns("download_poly_figure"), "Save Image"),
               circle  = FALSE,
               status  = "danger",
               icon    = icon("floppy-disk"),
               width   = "300px",
-              label   = "Save",
+              label   = "Save Plot",
               tooltip = tooltipOptions(title = "Click to see options!")
             )
           )
-        )  # closes Plot Controls box
-      )   # closes column(width = 3)
-    )  # closes fluidRow
-  )    # closes tagList
+        )
+      )
+    )
+  )
 }
+
 #' PolyBreedTools Server Functions
 #'
 #' @importFrom graphics axis hist points
@@ -172,7 +178,7 @@ mod_polybreedtools_ui <- function(id) {
 mod_polybreedtools_server <- function(input, output, session, parent_session) {
   ns <- session$ns
   `%||%` <- function(x, y) if (is.null(x)) y else x
-  #  Helpers
+  
   make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
     shiny::tags$div(
       class = "card mb-1",
@@ -201,6 +207,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       )
     )
   }
+  
   #  Help button
   shiny::observeEvent(input$help_btn, {
     shiny::showModal(
@@ -213,41 +220,48 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       )
     )
   })
-  #  Helper function
+  
   format_percent <- function(x) {
     scales::percent_format(accuracy = 0.1)(x)
   }
+  
   result_data <- reactiveVal(NULL)
   poly_items  <- reactiveValues(
     pred_results      = NULL,
     pred_results_long = NULL,
     id_order          = NULL
   )
+  
   #  Run estimation
   observeEvent(input$run, {
     req(input$reference_file, input$ref_ids_file, input$validation_file)
+    shinyjs::disable("download_poly_all")
     output$status <- renderText("Running estimation...")
+    
     tryCatch({
       reference <- utils::read.table(input$reference_file$datapath, header = TRUE, sep = "\t")
       reference <- dplyr::distinct(reference, ID, .keep_all = TRUE)
       reference <- tibble::column_to_rownames(reference, "ID")
+      
       reference_ids <- utils::read.table(input$ref_ids_file$datapath, header = TRUE, sep = "\t")
       ref_ids       <- lapply(as.list(reference_ids), as.character)
+      
       validation_raw <- utils::read.table(input$validation_file$datapath, header = TRUE, sep = "\t")
-      # NA filtering: validation samples (rows) with < 50% marker call rate
+      
       validation_markers  <- validation_raw[, colnames(validation_raw) != "ID", drop = FALSE]
       sample_call_rate    <- rowSums(!is.na(validation_markers)) / ncol(validation_markers)
       removed_samples     <- validation_raw$ID[sample_call_rate < 0.5]
       validation_filtered <- validation_raw[sample_call_rate >= 0.5, , drop = FALSE]
+      
       if (nrow(validation_filtered) == 0) {
         stop("No validation samples remain after filtering for genotyping rate >= 50%.")
       }
-      # NA filtering: validation markers (columns) with all NA
+      
       validation_marker_filtered <- validation_filtered[, colnames(validation_filtered) != "ID", drop = FALSE]
       col_call_counts <- colSums(!is.na(validation_marker_filtered))
       removed_markers <- colnames(validation_marker_filtered)[col_call_counts == 0]
       validation      <- validation_filtered[, c(TRUE, col_call_counts > 0), drop = FALSE]
-      # Build warning messages
+      
       warning_messages <- c()
       if (length(removed_samples) > 0) {
         warning_messages <- c(warning_messages, paste(
@@ -261,7 +275,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
           paste0("  \u2022 ", removed_markers, collapse = "\n")
         ))
       }
-      # Duplicated IDs in validation file
+      
       val_ids <- validation[, 1]
       dup_val <- val_ids[duplicated(val_ids)]
       if (length(dup_val) > 0) {
@@ -273,10 +287,12 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         output$status <- renderText(dup_val_msg)
         return()
       }
+      
       validation <- dplyr::distinct(validation, ID, .keep_all = TRUE)
       validation <- tibble::column_to_rownames(validation, "ID")
+      
       freq <- BIGr:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
-      # Error on NaN in freq
+      
       na_pos <- which(is.na(freq), arr.ind = TRUE)
       if (nrow(na_pos) > 0) {
         na_report <- lapply(unique(na_pos[, 2]), function(col_idx) {
@@ -294,25 +310,32 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         output$status <- renderText(NaN_freq_msg)
         return()
       }
+      
       prediction <- BIGr:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
       prediction <- as.data.frame(prediction, check.names = FALSE)
       prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
       prediction[] <- lapply(prediction, as.numeric)
+      
       columns_to_select <- colnames(prediction)
       predicted_line    <- columns_to_select[max.col(prediction[, columns_to_select, drop = FALSE], ties.method = "first")]
+      
       pred_results <- tibble::rownames_to_column(prediction, var = "ID")
       pred_results <- dplyr::mutate(pred_results, `Predicted line` = predicted_line)
       pred_results <- dplyr::mutate(pred_results, dplyr::across(dplyr::all_of(columns_to_select), ~format_percent(.x)))
+      
       result_data(pred_results)
+      
       id_order <- data.frame(
         ID              = rownames(prediction),
         predicted_line  = predicted_line,
         predicted_value = apply(prediction[, columns_to_select, drop = FALSE], 1, max, na.rm = TRUE),
         stringsAsFactors = FALSE
       )
+      
       output$preview <- DT::renderDT({
         DT::datatable(pred_results, options = list(pageLength = 10, scrollX = TRUE))
       })
+      
       pred_results_long <- tibble::rownames_to_column(prediction, var = "ID")
       pred_results_long <- tidyr::pivot_longer(
         pred_results_long,
@@ -321,28 +344,35 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         values_to = "percent"
       )
       pred_results_long$predicted_line <- id_order$predicted_line[match(pred_results_long$ID, id_order$ID)]
+      
       poly_items$pred_results      <- pred_results
       poly_items$pred_results_long <- pred_results_long
       poly_items$id_order          <- id_order
+      
       final_status <- "Estimation complete. File ready for download."
       if (length(warning_messages) > 0) {
         final_status <- paste(final_status, "\n\n", paste(warning_messages, collapse = "\n\n"))
       }
       output$status <- renderText(final_status)
+      shinyjs::enable("download_poly_all")
+      
     }, error = function(e) {
       output$status <- renderText(paste("Error during estimation:", e$message))
     })
   })
+  
   #  Ancestry plot
   ancestry_plot <- reactive({
     req(poly_items$pred_results_long, poly_items$id_order)
     dat <- poly_items$pred_results_long
+    
     if (isTRUE(input$poly_sort_by_predicted)) {
       ord    <- poly_items$id_order[order(poly_items$id_order$predicted_line, -poly_items$id_order$predicted_value), , drop = FALSE]
       dat$ID <- factor(dat$ID, levels = ord$ID)
     } else {
       dat$ID <- factor(dat$ID, levels = unique(dat$ID))
     }
+    
     p <- ggplot(dat, aes(x = ID, y = percent, fill = category)) +
       geom_bar(stat = "identity") +
       scale_fill_brewer(palette = input$color_choice) +
@@ -355,6 +385,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
           size  = as.numeric(input$poly_label_size %||% 8)
         )
       )
+    
     if (!isTRUE(input$poly_show_sample_labels)) {
       p <- p + theme(
         axis.text.x  = element_blank(),
@@ -363,18 +394,38 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     }
     p
   })
+  
   output$bar_plot <- renderPlot({
     req(poly_items$pred_results_long)
     ancestry_plot()
   })
-  #  Downloads
-  output$download_poly_file <- downloadHandler(
-    filename = function() paste0("lineage_estimation_", format(Sys.Date(), "%Y-%m-%d"), ".xlsx"),
-    content  = function(file) {
+  
+  #  Unified data download (Excel only)
+  output$download_poly_all <- shiny::downloadHandler(
+    filename = function() {
+      paste0("polybreedtools_results_", Sys.Date(), ".zip")
+    },
+    content = function(file) {
       req(poly_items$pred_results)
-      openxlsx::write.xlsx(poly_items$pred_results, file = file, rowNames = FALSE)
-    }
+      
+      tmp_dir <- tempfile("poly_export")
+      dir.create(tmp_dir)
+      on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
+      
+      openxlsx::write.xlsx(
+        poly_items$pred_results,
+        file     = file.path(tmp_dir, paste0("lineage_estimation_", Sys.Date(), ".xlsx")),
+        rowNames = FALSE
+      )
+      
+      zip_files <- list.files(tmp_dir)
+      zip::zip(zipfile = file, files = zip_files, root = tmp_dir)
+      unlink(tmp_dir, recursive = TRUE)
+    },
+    contentType = "application/zip"
   )
+  
+  #  Figure download (unchanged from original)
   output$download_poly_figure <- downloadHandler(
     filename = function() {
       ext <- input$poly_image_type %||% "png"
@@ -394,6 +445,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       }
     }
   )
+  
   #  Example tables
   example_ids_df <- data.frame(
     Group1 = c("SampleAlpha", "S3", "ExampleFour", "", ""),
@@ -407,8 +459,10 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     Marker3 = as.integer(c(0, 0, NA, 1, 1)),
     Marker4 = as.integer(c(0, 0, 0, 0, 0))
   )
+  
   output$example_ids   <- renderTable({ example_ids_df   }, bordered = TRUE)
   output$example_genos <- renderTable({ example_genos_df }, bordered = TRUE)
+  
   output$download_ids <- downloadHandler(
     filename = function() "sample_reference_ids.txt",
     content  = function(file) write.table(example_ids_df, file, sep = "\t", row.names = FALSE, quote = FALSE)
@@ -418,7 +472,9 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     content  = function(file) write.table(example_genos_df, file, sep = "\t", row.names = FALSE, quote = FALSE)
   )
 }
+
 ## To be copied in the UI
 # mod_polybreedtools_ui("polybreedtools_1")
+
 ## To be copied in the server
 # mod_polybreedtools_server("polybreedtools_1")

@@ -1,6 +1,6 @@
 Package: familia
-Title: R Shiny Application for Ancestry Assessments
-Version: 0.2.0
+Title: R Shiny Application for Population Structure and Ancestry Assessments
+Version: 1.0.0
 Authors@R: 
     c(
               person("Josue", "Chinchilla-Vargas",
@@ -10,9 +10,12 @@ Authors@R:
                     role = "aut"),
               person("Breeding Insight Team",
                     role = "aut"))
-Description: This R shiny app provides a web-based user friendly way for researchers to analyze genomic data without needing to use command-line tools.
-             Ancestry methods such as snmf() and PolyBreedTools are provided for researchers to evaluate the ancestry of plant and animal samples through
-             supervised and unsupervised approaches.
+Description: familia is a Shiny web application developed by the Breeding Insight team 
+            to support pedigree validation and ancestry assessment of plant and animal 
+            populations. The app integrates Mendelian error analysis, parentage assignment 
+            and genetic composition/ancestry methods to help researchers evaluate genomic 
+            relationships through an accessible, web-based interface without requiring 
+            command-line tools.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -33,7 +36,8 @@ Imports:
     shinydisconnect,
     shinyjs,
     RColorBrewer,
-    zip
+    zip,
+    data.table
 Suggests:
     LEA,
     spelling,

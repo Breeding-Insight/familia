@@ -112,6 +112,26 @@ mod_help_server <- function(id, parent_session = NULL) {
         ),
         
         make_top_panel(
+          panel_id     = "find_parentage",
+          icon_name    = "users",
+          label        = "Find Parentage",
+          body_content = help_content_find_parentage(
+            collapse_fn = make_collapse_panel,
+            id_prefix   = "page"
+          )
+        ),
+        
+        make_top_panel(
+          panel_id     = "validate_ped",
+          icon_name    = "circle-check",
+          label        = "Validate Pedigree",
+          body_content = help_content_validate_ped(
+            collapse_fn = make_collapse_panel,
+            id_prefix   = "page"
+          )
+        ),
+        
+        make_top_panel(
           panel_id     = "polybreedtools",
           icon_name    = "chart-column",
           label        = HTML("BreedTools<sup>poly</sup>"),
