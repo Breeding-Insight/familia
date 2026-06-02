@@ -5,7 +5,6 @@
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/familia)](https://github.com/Breeding-Insight/familia/pulls)
 [![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/familia?include_prereleases)](https://github.com/Breeding-Insight/familia/releases/latest)
 
-=======
 # _familia_  <img width="200" height="200" alt="familia_logo" src="https://github.com/user-attachments/assets/600951c0-65e5-4761-93a6-56d4c9a50ad0" align =right />
 
 
