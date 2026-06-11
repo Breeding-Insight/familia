@@ -90,7 +90,7 @@ mod_Home_ui <- function(id){
                         target = "_blank",
                         bs4Dash::valueBox(
                           value = NULL,
-                          subtitle = "familia Tutorial",
+                          subtitle = "Familia Tutorial",
                           icon = shiny::icon("compass"),
                           color = "info",
                           gradient = TRUE,

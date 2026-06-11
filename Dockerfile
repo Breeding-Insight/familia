@@ -17,11 +17,11 @@ RUN Rscript -e 'remotes::install_version("openxlsx",upgrade="never", version = "
 RUN Rscript -e 'remotes::install_version("tidyverse",upgrade="never", version = "2.0.0")'
 RUN Rscript -e 'remotes::install_version("viridis",upgrade="never", version = "0.6.5")'
 RUN Rscript -e 'remotes::install_version("golem",upgrade="never", version = "0.5.1")'
-RUN Rscript -e 'remotes::install_version("BIGr",upgrade="never", version = "0.6.2")'
+RUN Rscript -e 'remotes::install_version("BIGpopA",upgrade="never", version = "0.6.2")'
 RUN mkdir /build_zone
 ADD . /build_zone
 WORKDIR /build_zone
 RUN R -e 'remotes::install_local(upgrade="never")'
 RUN rm -rf /build_zone
 EXPOSE 80
-CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(familia);familia::run_app()"
+CMD R -e "options('shiny.port'=80,shiny.host='0.0.0.0');library(Familia);Familia::run_app()"

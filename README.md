@@ -100,7 +100,7 @@ Familia::run_app()
 Key R packages used by Familia include:
 
 * shiny
-* BIGr
+* BIGpopA
 * bs4Dash
 * DT
 * vcfR
@@ -113,7 +113,7 @@ Key R packages used by Familia include:
 ## Citation
 If you use Familia in research, please cite it as:
 
-Chinchilla-Vargas, J., & Sandercock, A. M. "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/familia/
+Chinchilla-Vargas, J., & Sandercock, A. M. "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/Familia/
 
 ## License
 Familia is released under the Apache License, Version 2.0.

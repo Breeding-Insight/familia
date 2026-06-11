@@ -1,7 +1,7 @@
-Package: familia
+Package: Familia
 Title: R Shiny Application for Population Structure and Ancestry Assessments
-Version: 1.0.0
-Authors@R: 
+Version: 1.0.1
+Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
                     role = c("aut","cre"),
@@ -10,20 +10,20 @@ Authors@R:
                     role = "aut"),
               person("Breeding Insight Team",
                     role = "aut"))
-Description: familia is a Shiny web application developed by the Breeding Insight team 
-            to support pedigree validation and ancestry assessment of plant and animal 
-            populations. The app integrates Mendelian error analysis, parentage assignment 
-            and genetic composition/ancestry methods to help researchers evaluate genomic 
-            relationships through an accessible, web-based interface without requiring 
+Description: Familia is a Shiny web application developed by the Breeding Insight team
+            to support pedigree validation and ancestry assessment of plant and animal
+            populations. The app integrates Mendelian error analysis, parentage assignment
+            and genetic composition/ancestry methods to help researchers evaluate genomic
+            relationships through an accessible, web-based interface without requiring
             command-line tools.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.4.0)
 biocViews:
-Imports: 
+Imports:
     vcfR (>= 1.15.0),
-    BIGr,
+    BIGpopA,
     shiny,
     golem,
     viridis,
@@ -42,5 +42,7 @@ Suggests:
     LEA,
     spelling,
     testthat
+Remotes:
+    Breeding-Insight/BIGpopA
 Language: en-US
 Config/roxygen2/version: 8.0.0

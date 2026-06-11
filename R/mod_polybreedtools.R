@@ -172,7 +172,7 @@ mod_polybreedtools_ui <- function(id) {
 #' @import RColorBrewer
 #' @importFrom scales comma_format
 #' @import openxlsx
-#' @import BIGr
+#' @import BIGpopA
 #'
 #' @noRd
 mod_polybreedtools_server <- function(input, output, session, parent_session) {
@@ -291,7 +291,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       validation <- dplyr::distinct(validation, ID, .keep_all = TRUE)
       validation <- tibble::column_to_rownames(validation, "ID")
       
-      freq <- BIGr:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
+      freq <- BIGpopA:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
       
       na_pos <- which(is.na(freq), arr.ind = TRUE)
       if (nrow(na_pos) > 0) {
@@ -311,7 +311,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         return()
       }
       
-      prediction <- BIGr:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
+      prediction <- BIGpopA:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
       prediction <- as.data.frame(prediction, check.names = FALSE)
       prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
       prediction[] <- lapply(prediction, as.numeric)
