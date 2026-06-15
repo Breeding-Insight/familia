@@ -132,4 +132,3 @@ See the LICENSE file or https://www.apache.org/licenses/LICENSE-2.0 for details.
 Familia is developed as part of the Breeding Insight initiative
 (https://www.breedinginsight.org) to provide open-source, data-driven tools
 for modern breeding programs.
-```
