@@ -17,7 +17,7 @@ RUN Rscript -e 'remotes::install_version("openxlsx",upgrade="never", version = "
 RUN Rscript -e 'remotes::install_version("tidyverse",upgrade="never", version = "2.0.0")'
 RUN Rscript -e 'remotes::install_version("viridis",upgrade="never", version = "0.6.5")'
 RUN Rscript -e 'remotes::install_version("golem",upgrade="never", version = "0.5.1")'
-RUN Rscript -e 'remotes::install_version("BIGpopA",upgrade="never", version = "0.6.2")'
+RUN Rscript -e 'remotes::install_github("Breeding-Insight/BIGpopA", ref = "v0.6.2", upgrade = "never")'
 RUN mkdir /build_zone
 ADD . /build_zone
 WORKDIR /build_zone
