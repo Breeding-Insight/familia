@@ -19,7 +19,7 @@ app_ui <- function(request) {
       skin = "black",
       bs4DashNavbar(
         title = tagList(
-          tags$img(src = 'www/familia_logo.png', height = '40', width = '40'),
+          tags$img(src = 'www/Familia_logo.png', height = '40', width = '40'),
         ),
         rightUi = tags$li(
           class = "dropdown",
@@ -65,7 +65,7 @@ app_ui <- function(request) {
           menuItem(HTML("BreedTools<sup>poly</sup>"), tabName = "polybreedtools", icon = icon("chart-column")),
           menuItem("SNMF", tabName = "snmf", icon = icon("list-ol")),
           tags$li(class = "header", style = "color: grey; margin-top: 18px; margin-bottom: 10px; padding-left: 15px;", "Information"),
-          menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/familia"),
+          menuItem("Source Code", icon = icon("circle-info"), href = "https://github.com/Breeding-Insight/Familia"),
           menuItem("Help", tabName = "help", icon = icon("circle-question"))
         )
       ),
@@ -89,7 +89,7 @@ app_ui <- function(request) {
         ),
         left = div(
           style = "display: flex; align-items: center; height: 100%;",
-          sprintf("v%s", as.character(utils::packageVersion("familia")))
+          sprintf("v%s", as.character(utils::packageVersion("Familia")))
         )
       ),
       dashboardBody(
@@ -150,7 +150,7 @@ golem_add_external_resources <- function() {
     favicon(),
     bundle_resources(
       path      = app_sys("app/www"),
-      app_title = "familia"
+      app_title = "Familia"
     ),
     tags$style(HTML("
       /* Ensure box collapse/expand buttons are always on top */

@@ -4,7 +4,7 @@ library(viridis)
 library(scales)
 library(tidyverse)
 library(openxlsx)
-library(BIGr)
+library(BIGpopA)
 library(DT)
 
 # Format percent helper
@@ -95,8 +95,8 @@ server <- function(input, output, session) {
         distinct(ID, .keep_all = TRUE) %>%
         column_to_rownames("ID")
       
-      freq <- BIGr:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
-      prediction <- BIGr:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
+      freq <- BIGpopA:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
+      prediction <- BIGpopA:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
       
       prediction <- as.data.frame(prediction)
       prediction <- prediction[, !colnames(prediction) %in% c("R2")]

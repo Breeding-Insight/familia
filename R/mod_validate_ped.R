@@ -261,7 +261,7 @@ mod_validate_ped_server <- function(id, parent_session) {
           title = "Evaluating trios..."
         )
         
-        report <- BIGr::validate_pedigree(
+        report <- BIGpopA::validate_pedigree(
           pedigree_file                 = ped_raw,
           genotypes_file                = geno_raw,
           founders_file                 = founders_path,

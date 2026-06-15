@@ -1,3 +1,3 @@
-# familia 0.1.0
+# Familia 0.1.0
 
 * Initial Golem framework

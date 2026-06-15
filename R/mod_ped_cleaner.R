@@ -254,7 +254,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           title = "Detecting cycles and dependencies..."
         )
         
-        report <- BIGr::check_ped(
+        report <- BIGpopA::check_ped(
           ped.file                       = ped_raw,
           verbose                        = FALSE,
           correct_conflicting_trios      = input$correct_conflicting_trios,

@@ -257,7 +257,7 @@ mod_find_parentage_server <- function(id, parent_session) {
           title = "Running parentage assignment..."
         )
         
-        report <- BIGr::find_parentage(
+        report <- BIGpopA::find_parentage(
           genotypes_file       = geno_raw,
           parents_file         = parents_raw,
           progeny_file         = progeny_raw,

@@ -18,19 +18,17 @@ mod_Home_ui <- function(id){
       fluidRow(
         column(width = 4,
                box(
-                 title = "Familia: Ancestry Estimation App", status = "info", solidHeader = FALSE, width = 12, collapsible = FALSE,
+                 title = "Familia: Pedigree Validation and Ancestry Assessment App", status = "info", solidHeader = FALSE, width = 12, collapsible = FALSE,
                  HTML(
-              "<p>The BIGapp is a user-friendly tool for processing low to mid-density genotyping data for diploid and polyploid species. This R shiny app provides a web-based user friendly way for users to analyze genomic data without needing to use command-line tools.
-              Additional analysis will be added, with the initial focus on a core set of features for supporting breeding decisions.</p>
-
+                   "<p>Familia is a user-friendly Shiny web application developed by the Breeding Insight team for pedigree validation and ancestry assessment of plant and animal populations. 
+              The app provides an accessible, web-based interface for analyzing genomic relationships without requiring command-line tools, and is designed to be species-agnostic and adaptable to a wide range of breeding programs.</p>
               <p><b>Supported Analyses</b></p>
-              Initial supported analyses includes the mature genomics/bioinformatics pipelines developed within Breeding Insight:
               <ul>
-                <li>Genotype Processing</li>
-                <li>Summary Metrics</li>
-                <li>Population Structure</li>
-                <li>GWAS</li>
-                <li>Genomic Selection</li>
+                <li>Pedigree Cleaning</li>
+                <li>Pedigree Validation</li>
+                <li>Parentage Assignment</li>
+                <li>Line/Breed Composition Estimation (PolyBreedTools)</li>
+                <li>Unsupervised Ancestry Estimation (SNMF)</li>
               </ul>"
                  ),
                  style = "overflow-y: auto; height: 500px"
@@ -90,7 +88,7 @@ mod_Home_ui <- function(id){
                         target = "_blank",
                         bs4Dash::valueBox(
                           value = NULL,
-                          subtitle = "familia Tutorial",
+                          subtitle = "Familia Tutorial",
                           icon = shiny::icon("compass"),
                           color = "info",
                           gradient = TRUE,
