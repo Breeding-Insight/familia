@@ -111,9 +111,18 @@ Key R packages used by Familia include:
 * LEA (required for SNMF-based ancestry inference)
 ---
 ## Citation
-If you use Familia in research, please cite it as:
 
+If you use Familia in research, please cite it as:
 Chinchilla-Vargas, J., & Sandercock, A. M. "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/Familia/
+RRID: [PENDING]
+
+#### Also cite:
+* **For sNMF:**
+    - [Frichot et.al](https://pmc.ncbi.nlm.nih.gov/articles/pmid/24496008/) for original methods
+    - [Frichot et.al](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12382) for LEA package
+* **BreedTools<sup>poly</sup>:**
+    - [Funkhouser et al.](https://academic.oup.com/tas/article/1/1/36/4636602) for original breedTools methods  
+    - [Sandercock et al.](https://acsess.onlinelibrary.wiley.com/doi/10.1002/tpg2.70067) for methods expansion to polyploidy  
 
 ## License
 Familia is released under the Apache License, Version 2.0.
