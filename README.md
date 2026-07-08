@@ -114,15 +114,14 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., & Sandercock, A. M., The Breeding Insight Team "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/Familia/
-RRID: [PENDING]
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 1.0.1. https://github.com/Breeding-Insight/Familia/
 
 #### Also cite:
 * **For sNMF:**
     - [Frichot et.al](https://pmc.ncbi.nlm.nih.gov/articles/pmid/24496008/) for original methods
     - [Frichot et.al](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12382) for LEA package
 * **BreedTools<sup>poly</sup>:**
-    - [Funkhouser et al.](https://academic.oup.com/tas/article/1/1/36/4636602) for original breedTools methods  
+    - [Funkhouser et al.](https://doi.org/10.2527/tas2016.0003) for original breedTools methods  
     - [Sandercock et al.](https://acsess.onlinelibrary.wiley.com/doi/10.1002/tpg2.70067) for methods expansion to polyploidy  
 
 ## License

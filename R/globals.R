@@ -1,3 +1,9 @@
+#' Internal base-package imports
+#'
+#' @importFrom utils capture.output packageVersion sessionInfo str write.table
+#' @noRd
+NULL
+
 # Declare variables used in non-standard evaluation (ggplot2 aes() and dplyr
 # verbs) so that R CMD check does not raise "no visible binding" NOTEs.
 utils::globalVariables(c(

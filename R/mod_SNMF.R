@@ -233,7 +233,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   shiny::observeEvent(input$help_btn, {
     shiny::showModal(
       shiny::modalDialog(
-        title     = shiny::tagList(shiny::icon("circle-question"), " SNMF — Help"),
+        title     = shiny::tagList(shiny::icon("circle-question"), " SNMF - Help"),
         size      = "l",
         easyClose = TRUE,
         footer    = shiny::modalButton("Close"),
@@ -283,7 +283,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     if (nrow(gt) == 0 || ncol(gt) == 0) {
       stop("No genotype calls were found in the uploaded VCF.", call. = FALSE)
     }
-    dosage_cols <- lapply(seq_len(ncol(gt)), function(i) BIGpopA:::convert_to_dosage(gt[, i]))
+    dosage_cols <- lapply(seq_len(ncol(gt)), function(i) convert_to_dosage(gt[, i]))
     dosage_mat  <- do.call(cbind, dosage_cols)
     colnames(dosage_mat) <- colnames(gt)
     rownames(dosage_mat) <- rownames(gt)

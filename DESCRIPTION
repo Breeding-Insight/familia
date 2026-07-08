@@ -10,7 +10,7 @@ Authors@R:
                     role = "aut"),
               person("Breeding Insight Team",
                     role = "aut"))
-Description: Familia is a Shiny web application developed by the Breeding Insight team
+Description: Provides a Shiny web application developed by the Breeding Insight team
             to support pedigree validation and ancestry assessment of plant and animal
             populations. The app integrates Mendelian error analysis, parentage assignment
             and genetic composition/ancestry methods to help researchers evaluate genomic

@@ -43,7 +43,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     }
   }
   
-  # ── Shared input format table helper ──────────────────────────────────
+  # -- Shared input format table helper ----------------------------------
   geno_table <- function(rows) {
     shiny::tags$table(
       class = "table table-bordered table-sm",
@@ -106,34 +106,34 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Steps ────────────────────────────────────────────────────────
+    # -- Steps --------------------------------------------------------
     shiny::h6(shiny::tagList(shiny::icon("list-ol"), " Steps"),
               style = "font-weight: bold;"),
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Reference Genotypes</strong> — a tab-separated <code>.txt</code> file with
+        "<strong>Upload Reference Genotypes</strong> - a tab-separated <code>.txt</code> file with
   samples in rows and SNP markers in columns. The first column must be <code>ID</code>.
   Missing values should be coded as <code>NA</code>."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Reference IDs</strong> — a tab-separated <code>.txt</code> file assigning
+        "<strong>Upload Reference IDs</strong> - a tab-separated <code>.txt</code> file assigning
   each reference sample to a group/line. Each column is one group; values are sample IDs."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Validation Genotypes</strong> — same format as the reference genotype file
+        "<strong>Upload Validation Genotypes</strong> - same format as the reference genotype file
   (samples in rows, SNP markers in columns, first column named <code>ID</code>)."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set Ploidy</strong> — enter the ploidy level of the species (e.g., 2 for diploid, 4 for tetraploid)."
+        "<strong>Set Ploidy</strong> - enter the ploidy level of the species (e.g., 2 for diploid, 4 for tetraploid)."
       )),
-      shiny::tags$li(shiny::HTML("<strong>Run Estimation</strong> — computes ancestry proportions for each validation sample.")),
+      shiny::tags$li(shiny::HTML("<strong>Run Estimation</strong> - computes ancestry proportions for each validation sample.")),
       shiny::tags$li(shiny::HTML("<strong>Review</strong> the Results Table and Ancestry Plot tabs.")),
       shiny::tags$li(shiny::HTML("<strong>Export</strong> results as an <code>.xlsx</code> file or save the plot image."))
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Input Format Details ─────────────────────────────────────────
+    # -- Input Format Details -----------------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("file-lines"), " Input Format Details"),
       style = "font-weight: bold;"
@@ -173,7 +173,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
         shiny::p(
           "Tab-separated file where each column represents one reference group or line.
            Column headers are the group names. Each column lists the sample IDs belonging to that group.
-           Columns may have different lengths — empty cells are ignored.",
+           Columns may have different lengths - empty cells are ignored.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -191,7 +191,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Warnings & Automatic Filtering ──────────────────────────────
+    # -- Warnings & Automatic Filtering ------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("triangle-exclamation"), " Automatic Filtering & Warnings"),
       style = "font-weight: bold;"
@@ -253,17 +253,17 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Export Contents ──────────────────────────────────────────────
+    # -- Export Contents ----------------------------------------------
     shiny::h6(shiny::tagList(shiny::icon("download"), " Export Contents"),
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Results Table</strong> — downloadable as <code>.xlsx</code> via <em>Save Excel File</em>.
+        "<strong>Results Table</strong> - downloadable as <code>.xlsx</code> via <em>Save Excel File</em>.
          Contains each validation sample's estimated ancestry proportion per group and its predicted line."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Ancestry Plot</strong> — stacked bar chart of ancestry proportions.
+        "<strong>Ancestry Plot</strong> - stacked bar chart of ancestry proportions.
          Exportable as <code>png</code>, <code>jpeg</code>, <code>svg</code>, or <code>pdf</code>
          via <em>Save Image</em>. Resolution, width, and height are configurable."
       ))

@@ -212,7 +212,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
   shiny::observeEvent(input$help_btn, {
     shiny::showModal(
       shiny::modalDialog(
-        title     = shiny::tagList(shiny::icon("circle-question"), " PolyBreedTools — Help"),
+        title     = shiny::tagList(shiny::icon("circle-question"), " PolyBreedTools - Help"),
         size      = "l",
         easyClose = TRUE,
         footer    = shiny::modalButton("Close"),
@@ -291,7 +291,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       validation <- dplyr::distinct(validation, ID, .keep_all = TRUE)
       validation <- tibble::column_to_rownames(validation, "ID")
       
-      freq <- BIGpopA:::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
+      freq <- BIGpopA::allele_freq_poly(reference, ref_ids, ploidy = input$ploidy)
       
       na_pos <- which(is.na(freq), arr.ind = TRUE)
       if (nrow(na_pos) > 0) {
@@ -311,7 +311,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         return()
       }
       
-      prediction <- BIGpopA:::solve_composition_poly(validation, freq, ploidy = input$ploidy)
+      prediction <- BIGpopA::solve_composition_poly(validation, freq, ploidy = input$ploidy)
       prediction <- as.data.frame(prediction, check.names = FALSE)
       prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
       prediction[] <- lapply(prediction, as.numeric)

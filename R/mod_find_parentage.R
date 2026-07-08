@@ -85,9 +85,9 @@ mod_find_parentage_ui <- function(id) {
                     <li>Select a method and set parameters, then click <strong>Run Parentage Assignment</strong>.</li>
                     <li>Results are split into:</li>
                     <ul>
-                      <li><strong>Pass</strong> — progeny with a confident assignment below the error threshold.</li>
-                      <li><strong>High Error</strong> — progeny exceeding the error threshold.</li>
-                      <li><strong>Low Markers</strong> — progeny with insufficient markers.</li>
+                      <li><strong>Pass</strong> - progeny with a confident assignment below the error threshold.</li>
+                      <li><strong>High Error</strong> - progeny exceeding the error threshold.</li>
+                      <li><strong>Low Markers</strong> - progeny with insufficient markers.</li>
                     </ul>
                     <li>Review results in the Issue Tables tab, then export as a .zip file.</li>
                   </ul>
@@ -213,7 +213,7 @@ mod_find_parentage_server <- function(id, parent_session) {
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
-          title     = shiny::tagList(shiny::icon("circle-question"), " Find Parentage — Help"),
+          title     = shiny::tagList(shiny::icon("circle-question"), " Find Parentage - Help"),
           size      = "l",
           easyClose = TRUE,
           footer    = shiny::modalButton("Close"),

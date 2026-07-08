@@ -92,19 +92,19 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Pedigree File</strong> — tab-separated .txt/.tsv or comma-separated .csv
+        "<strong>Upload a Pedigree File</strong> - tab-separated .txt/.tsv or comma-separated .csv
         with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Genotypes File</strong> — must include an <code>id</code> column followed
+        "<strong>Upload a Genotypes File</strong> - must include an <code>id</code> column followed
         by marker columns coded as <code>0</code>, <code>1</code>, <code>2</code>."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Optionally upload a Founders File</strong> — a single column of founder IDs (.txt).
+        "<strong>Optionally upload a Founders File</strong> - a single column of founder IDs (.txt).
         Trios involving founders are preserved and reported separately."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set parameters</strong> — trio error threshold, single-parent error threshold,
+        "<strong>Set parameters</strong> - trio error threshold, single-parent error threshold,
         and minimum markers."
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Validation</strong> to evaluate all trios.")),
@@ -164,7 +164,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     
     # Result categories
     shiny::h6(
-      shiny::tagList(shiny::icon("triangle-exclamation"), " Result Categories — What Each Means"),
+      shiny::tagList(shiny::icon("triangle-exclamation"), " Result Categories - What Each Means"),
       style = "font-weight: bold;"
     ),
     shiny::p("Click each category to expand an example.",
@@ -173,7 +173,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_pass"),
       icon_name    = "circle-check",
-      label        = "Pass — trio consistent with Mendelian inheritance",
+      label        = "Pass - trio consistent with Mendelian inheritance",
       body_content = shiny::tagList(
         shiny::p(
           "The Mendelian error rate for this trio is at or below the trio error threshold
@@ -188,7 +188,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_fail"),
       icon_name    = "xmark",
-      label        = "Fail — trio inconsistent with Mendelian inheritance",
+      label        = "Fail - trio inconsistent with Mendelian inheritance",
       body_content = shiny::tagList(
         shiny::p(
           "The Mendelian error rate exceeds the trio error threshold, suggesting the recorded
@@ -203,7 +203,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_low_markers"),
       icon_name    = "triangle-exclamation",
-      label        = "Low Markers — insufficient markers for reliable validation",
+      label        = "Low Markers - insufficient markers for reliable validation",
       body_content = shiny::tagList(
         shiny::p(
           "Fewer informative markers than the Min Markers threshold were available for this trio.
@@ -218,7 +218,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_no_geno"),
       icon_name    = "database",
-      label        = "No Genotype Data — individual absent from genotypes file",
+      label        = "No Genotype Data - individual absent from genotypes file",
       body_content = shiny::tagList(
         shiny::p(
           "The progeny or one or both parents could not be found in the uploaded genotypes file.
@@ -233,7 +233,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_founders"),
       icon_name    = "seedling",
-      label        = "Founders — trio identified as a founder",
+      label        = "Founders - trio identified as a founder",
       body_content = shiny::tagList(
         shiny::p(
           "This individual was listed in the optional founders file and is treated as a founder
@@ -249,7 +249,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("vp_help_missing_parents"),
       icon_name    = "user-slash",
-      label        = "Missing Parents — one or both parents coded as 0",
+      label        = "Missing Parents - one or both parents coded as 0",
       body_content = shiny::tagList(
         shiny::p(
           "One or both parents are recorded as 0 (unknown) in the pedigree. If genotype data
@@ -269,8 +269,8 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
-      shiny::tags$li(shiny::HTML("<code>corrected_pedigree.txt</code> — the validated pedigree, tab-separated.")),
-      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> — all trio results combined, tab-separated.")),
+      shiny::tags$li(shiny::HTML("<code>corrected_pedigree.txt</code> - the validated pedigree, tab-separated.")),
+      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all trio results combined, tab-separated.")),
       shiny::tags$li(shiny::HTML("One .txt report per result category (only included if records exist):
         <code>pass.txt</code>, <code>fail.txt</code>, <code>low_markers.txt</code>,
         <code>no_genotype_data.txt</code>, <code>founders.txt</code>,
