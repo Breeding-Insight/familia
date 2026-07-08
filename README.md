@@ -114,7 +114,7 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., & Sandercock, A. M. "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/Familia/
+Chinchilla-Vargas, J., & Sandercock, A. M., The Breeding Insight Team "Familia: Pedigree Validation and Ancestry Assessment Shiny App." https://github.com/Breeding-Insight/Familia/
 RRID: [PENDING]
 
 #### Also cite:

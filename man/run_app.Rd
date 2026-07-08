@@ -47,4 +47,5 @@ Run the Shiny Application
 \dontrun{
   run_app()
 }
+
 }
