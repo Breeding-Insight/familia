@@ -4,6 +4,14 @@
 #' See `?golem::get_golem_options` for more details.
 #' @inheritParams shiny::shinyApp
 #'
+#' @return A Shiny application object (of class `shiny.appobj`), invoked for
+#'   the side effect of launching the Familia app.
+#'
+#' @examples
+#' \dontrun{
+#'   run_app()
+#' }
+#'
 #' @export
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options

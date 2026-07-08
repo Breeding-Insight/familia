@@ -7,3 +7,10 @@
 ^\.dockerignore$
 ^\.positai$
 ^\.claude$
+^app$
+^app\.R$
+^dev$
+^\.RData$
+^\.Rhistory$
+^.*\.DS_Store$
+^inst/snmf_example\.vcf$

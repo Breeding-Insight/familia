@@ -595,9 +595,9 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       "Entropy: ", if (entropy_enabled) "enabled" else "disabled", "\n"
     )
     
-    old_wd <- getwd()
-    on.exit(setwd(old_wd), add = TRUE)
-    setwd(state$run_dir)
+    # Run SNMF from the run directory; withr restores the previous working
+    # directory automatically when this reactive exits (CRAN-safe).
+    withr::local_dir(state$run_dir)
     
     snmf_args <- list(
       state$geno_path,
