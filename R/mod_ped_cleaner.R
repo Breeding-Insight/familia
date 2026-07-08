@@ -123,11 +123,11 @@ mod_ped_cleaner_ui <- function(id) {
                     <li>A run summary will appear in the panel on the right after the check completes.</li>
                     <li>Issues detected:</li>
                     <ul>
-                      <li><strong>Exact Duplicates</strong> — fully identical rows are always removed.</li>
-                      <li><strong>Conflicting Trios</strong> — same ID with different parents; corrected when option is checked.</li>
-                      <li><strong>Inconsistent Sex Roles</strong> — individual appears as both male and female parent; corrected when option is checked.</li>
-                      <li><strong>Missing Parents</strong> — referenced parents always added with unknown parents (0).</li>
-                      <li><strong>Cycles / Dependencies</strong> — circular relationships are flagged and must be resolved manually.</li>
+                      <li><strong>Exact Duplicates</strong> - fully identical rows are always removed.</li>
+                      <li><strong>Conflicting Trios</strong> - same ID with different parents; corrected when option is checked.</li>
+                      <li><strong>Inconsistent Sex Roles</strong> - individual appears as both male and female parent; corrected when option is checked.</li>
+                      <li><strong>Missing Parents</strong> - referenced parents always added with unknown parents (0).</li>
+                      <li><strong>Cycles / Dependencies</strong> - circular relationships are flagged and must be resolved manually.</li>
                     </ul>
                     <li>Review results in the <strong>Issue Tables</strong> tab, then export.</li>
                   </ul>
@@ -190,7 +190,7 @@ mod_ped_cleaner_server <- function(id, parent_session) {
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
-          title     = shiny::tagList(shiny::icon("circle-question"), " Pedigree Cleaner — Help"),
+          title     = shiny::tagList(shiny::icon("circle-question"), " Pedigree Cleaner - Help"),
           size      = "l",
           easyClose = TRUE,
           footer    = shiny::modalButton("Close"),

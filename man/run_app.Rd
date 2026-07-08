@@ -36,6 +36,16 @@ expression in order for the match to be considered successful.}
 \item{...}{arguments to pass to golem_opts.
 See \code{?golem::get_golem_options} for more details.}
 }
+\value{
+A Shiny application object (of class \code{shiny.appobj}), invoked for
+the side effect of launching the Familia app.
+}
 \description{
 Run the Shiny Application
+}
+\examples{
+\dontrun{
+  run_app()
+}
+
 }

@@ -35,7 +35,7 @@ mod_help_ui <- function(id) {
 mod_help_server <- function(id, parent_session = NULL) {
   shiny::moduleServer(id, function(input, output, session) {
     
-    # ── Top-level accordion panel builder ─────────────────────────────────
+    # -- Top-level accordion panel builder ---------------------------------
     make_top_panel <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
         style = "margin-bottom: 8px;",
@@ -67,7 +67,7 @@ mod_help_server <- function(id, parent_session = NULL) {
       )
     }
     
-    # ── Inner collapse panel builder (passed down to help_content_* fns) ──
+    # -- Inner collapse panel builder (passed down to help_content_* fns) --
     make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
         class = "card mb-1",
@@ -97,7 +97,7 @@ mod_help_server <- function(id, parent_session = NULL) {
       )
     }
     
-    # ── Render accordion ───────────────────────────────────────────────────
+    # -- Render accordion ---------------------------------------------------
     output$help_accordion <- shiny::renderUI({
       shiny::tagList(
         

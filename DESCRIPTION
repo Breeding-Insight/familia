@@ -10,7 +10,7 @@ Authors@R:
                     role = "aut"),
               person("Breeding Insight Team",
                     role = "aut"))
-Description: Familia is a Shiny web application developed by the Breeding Insight team
+Description: Provides a Shiny web application developed by the Breeding Insight team
             to support pedigree validation and ancestry assessment of plant and animal
             populations. The app integrates Mendelian error analysis, parentage assignment
             and genetic composition/ancestry methods to help researchers evaluate genomic
@@ -22,27 +22,31 @@ Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.4.0)
 biocViews:
 Imports:
-    vcfR (>= 1.15.0),
     BIGpopA,
-    shiny,
-    golem,
-    viridis,
-    scales,
-    tidyverse,
-    openxlsx,
-    DT,
     bs4Dash,
-    shinyWidgets,
+    config,
+    curl,
+    data.table,
+    dplyr,
+    DT,
+    ggplot2,
+    golem,
+    httr,
+    openxlsx,
+    RColorBrewer,
+    scales,
+    shiny,
     shinydisconnect,
     shinyjs,
-    RColorBrewer,
-    zip,
-    data.table
+    shinyWidgets,
+    tibble,
+    tidyr,
+    vcfR (>= 1.15.0),
+    withr,
+    zip
 Suggests:
     LEA,
     spelling,
     testthat
-Remotes:
-    Breeding-Insight/BIGpopA
 Language: en-US
 Config/roxygen2/version: 8.0.0

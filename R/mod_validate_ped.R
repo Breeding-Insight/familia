@@ -79,12 +79,12 @@ mod_validate_ped_ui <- function(id) {
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
                     <li>Results are split into:</li>
                     <ul>
-                      <li><strong>Pass</strong> — trios within the Mendelian error threshold.</li>
-                      <li><strong>Fail</strong> — trios exceeding the threshold.</li>
-                      <li><strong>Low Markers</strong> — trios with insufficient markers.</li>
-                      <li><strong>No Genotype Data</strong> — trios absent from the genotype file.</li>
-                      <li><strong>Founders</strong> — trios identified as founders.</li>
-                      <li><strong>Missing Parents</strong> — trios with one or both parents coded as 0.</li>
+                      <li><strong>Pass</strong> - trios within the Mendelian error threshold.</li>
+                      <li><strong>Fail</strong> - trios exceeding the threshold.</li>
+                      <li><strong>Low Markers</strong> - trios with insufficient markers.</li>
+                      <li><strong>No Genotype Data</strong> - trios absent from the genotype file.</li>
+                      <li><strong>Founders</strong> - trios identified as founders.</li>
+                      <li><strong>Missing Parents</strong> - trios with one or both parents coded as 0.</li>
                     </ul>
                     <li>Review the Issue Tables tab, then export results as a .zip file.</li>
                   </ul>
@@ -212,7 +212,7 @@ mod_validate_ped_server <- function(id, parent_session) {
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
-          title     = shiny::tagList(shiny::icon("circle-question"), " Validate Pedigree — Help"),
+          title     = shiny::tagList(shiny::icon("circle-question"), " Validate Pedigree - Help"),
           size      = "l",
           easyClose = TRUE,
           footer    = shiny::modalButton("Close"),

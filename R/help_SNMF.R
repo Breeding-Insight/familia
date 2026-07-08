@@ -42,7 +42,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     }
   }
   
-  # ── Shared cross-entropy table helper ─────────────────────────────
+  # -- Shared cross-entropy table helper -----------------------------
   ce_table <- function(rows) {
     shiny::tags$table(
       class = "table table-bordered table-sm",
@@ -79,7 +79,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Steps ────────────────────────────────────────────────────────
+    # -- Steps --------------------------------------------------------
     shiny::h6(shiny::tagList(shiny::icon("list-ol"), " Steps"),
               style = "font-weight: bold;"),
     shiny::tags$ol(
@@ -90,20 +90,20 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
          <code>.geno</code> format."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set Ploidy</strong> — enter the ploidy of the species (e.g., 2 for diploid)."
+        "<strong>Set Ploidy</strong> - enter the ploidy of the species (e.g., 2 for diploid)."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set K range</strong> — define the minimum and maximum number of ancestry clusters to test."
+        "<strong>Set K range</strong> - define the minimum and maximum number of ancestry clusters to test."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set Repetitions</strong> — number of independent runs per K value. More repetitions
+        "<strong>Set Repetitions</strong> - number of independent runs per K value. More repetitions
          improve reliability but increase runtime."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Choose Selection Mode</strong> — controls how the best K and run are determined
+        "<strong>Choose Selection Mode</strong> - controls how the best K and run are determined
          (see Selection Modes below)."
       )),
-      shiny::tags$li(shiny::HTML("<strong>Run SNMF</strong> — executes the analysis.")),
+      shiny::tags$li(shiny::HTML("<strong>Run SNMF</strong> - executes the analysis.")),
       shiny::tags$li(shiny::HTML(
         "<strong>Review</strong> the Cross-Entropy, Ancestry Plot, Q Matrix, and Logs tabs."
       )),
@@ -113,7 +113,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Selection Modes ──────────────────────────────────────────────
+    # -- Selection Modes ----------------------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("sliders"), " Selection Modes"),
       style = "font-weight: bold;"
@@ -180,7 +180,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Parameter Reference ──────────────────────────────────────────
+    # -- Parameter Reference ------------------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("gear"), " Parameter Reference"),
       style = "font-weight: bold;"
@@ -251,7 +251,7 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Plot Controls ─────────────────────────────────────────────────
+    # -- Plot Controls -------------------------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("palette"), " Plot Controls"),
       style = "font-weight: bold;"
@@ -302,28 +302,28 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       icon_name    = "text-height",
       label        = "Label size",
       body_content = shiny::p(
-        "Controls the font size of the sample ID labels on the x-axis. Range is 6–14pt.
+        "Controls the font size of the sample ID labels on the x-axis. Range is 6-14pt.
          Only has a visible effect when sample labels are enabled.",
         style = "margin: 0;"
       )
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
-    # ── Export Contents ──────────────────────────────────────────────
+    # -- Export Contents ----------------------------------------------
     shiny::h6(shiny::tagList(shiny::icon("download"), " Export Contents"),
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<code>Download Q (CSV)</code> — Q-matrix for the currently selected K and run,
+        "<code>Download Q (CSV)</code> - Q-matrix for the currently selected K and run,
          with sample IDs and one column per cluster."
       )),
       shiny::tags$li(shiny::HTML(
-        "<code>Download cross-entropy (CSV)</code> — full cross-entropy table across all
+        "<code>Download cross-entropy (CSV)</code> - full cross-entropy table across all
          K values and repetitions (only available when cross-entropy is enabled)."
       )),
       shiny::tags$li(shiny::HTML(
-        "<code>Save Image</code> — exports the Cross-Entropy Plot or Ancestry Plot as
+        "<code>Save Image</code> - exports the Cross-Entropy Plot or Ancestry Plot as
          <code>jpeg</code>, <code>tiff</code>, <code>png</code>, or <code>svg</code>
          at configurable resolution, width, and height."
       ))

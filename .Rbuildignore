@@ -7,3 +7,13 @@
 ^\.dockerignore$
 ^\.positai$
 ^\.claude$
+^\.github$
+^app$
+^app\.R$
+^dev$
+^\.RData$
+^\.Rhistory$
+^.*\.DS_Store$
+^inst/snmf_example\.vcf$
+^cran-comments\.md$
+^CRAN-SUBMISSION$

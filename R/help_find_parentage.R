@@ -119,15 +119,15 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Genotypes File</strong> — tab-separated .txt/.tsv or comma-separated .csv
+        "<strong>Upload a Genotypes File</strong> - tab-separated .txt/.tsv or comma-separated .csv
         with an <code>id</code> column followed by marker columns coded as <code>0</code>, <code>1</code>, <code>2</code>."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Parents File</strong> — must include an <code>id</code> column and an optional
+        "<strong>Upload a Parents File</strong> - must include an <code>id</code> column and an optional
         <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>)."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Progeny File</strong> — must include an <code>id</code> column."
+        "<strong>Upload a Progeny File</strong> - must include an <code>id</code> column."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Select a Method</strong> and configure parameters (error threshold, minimum markers, ties, selfing, self-match)."
@@ -149,7 +149,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("fp_help_best_pair"),
       icon_name    = "users",
-      label        = "Best Pair (Mendelian) — default",
+      label        = "Best Pair (Mendelian) - default",
       body_content = shiny::tagList(
         shiny::p(
           "Finds the male-female parent pair that minimises the Mendelian error rate for each progeny.
@@ -283,7 +283,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("fp_help_pass"),
       icon_name    = "circle-check",
-      label        = "Pass — confident assignment within error threshold",
+      label        = "Pass - confident assignment within error threshold",
       body_content = shiny::tagList(
         shiny::p(
           "Progeny whose best parent assignment has a Mendelian error rate at or below the threshold
@@ -300,7 +300,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("fp_help_high_error"),
       icon_name    = "triangle-exclamation",
-      label        = "High Error — assignment exceeds error threshold",
+      label        = "High Error - assignment exceeds error threshold",
       body_content = shiny::tagList(
         shiny::p(
           "Progeny whose best parent assignment exceeds the error threshold. These may indicate
@@ -317,7 +317,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("fp_help_low_markers"),
       icon_name    = "exclamation",
-      label        = "Low Markers — insufficient markers for a reliable call",
+      label        = "Low Markers - insufficient markers for a reliable call",
       body_content = shiny::tagList(
         shiny::p(
           "Progeny with fewer informative markers than the Min Markers threshold. The assignment
@@ -338,10 +338,10 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
-      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> — all progeny assignments, tab-separated.")),
-      shiny::tags$li(shiny::HTML("<code>pass.txt</code> — progeny with confident assignments (if any).")),
-      shiny::tags$li(shiny::HTML("<code>high_error.txt</code> — progeny exceeding the error threshold (if any).")),
-      shiny::tags$li(shiny::HTML("<code>low_markers.txt</code> — progeny with insufficient markers (if any)."))
+      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all progeny assignments, tab-separated.")),
+      shiny::tags$li(shiny::HTML("<code>pass.txt</code> - progeny with confident assignments (if any).")),
+      shiny::tags$li(shiny::HTML("<code>high_error.txt</code> - progeny exceeding the error threshold (if any).")),
+      shiny::tags$li(shiny::HTML("<code>low_markers.txt</code> - progeny with insufficient markers (if any)."))
     )
   )
 }
