@@ -1,3 +1,7 @@
+# Familia 1.0.2
+
+*Fixed test directory for CRAN submission
+
 # Familia 1.0.1
 
 * Prepared app for CRAN submission.

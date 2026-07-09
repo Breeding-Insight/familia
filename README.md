@@ -114,7 +114,7 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 1.0.1. https://github.com/Breeding-Insight/Familia/
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 1.0.2. https://github.com/Breeding-Insight/Familia/
 
 #### Also cite:
 * **For sNMF:**

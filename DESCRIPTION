@@ -1,6 +1,6 @@
 Package: Familia
 Title: R Shiny Application for Population Structure and Ancestry Assessments
-Version: 1.0.1
+Version: 1.0.2
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
