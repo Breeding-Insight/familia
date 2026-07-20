@@ -1,6 +1,6 @@
 Package: Familia
-Title: R Shiny Application for Population Structure and Ancestry Assessments
-Version: 1.0.2
+Title: 'shiny' Application for Population Structure and Ancestry Assessments
+Version: 1.0.3
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
@@ -10,12 +10,21 @@ Authors@R:
                     role = "aut"),
               person("Breeding Insight Team",
                     role = "aut"))
-Description: Provides a Shiny web application developed by the Breeding Insight team
+Description: Provides a 'shiny' web application developed by the Breeding Insight team
             to support pedigree validation and ancestry assessment of plant and animal
             populations. The app integrates Mendelian error analysis, parentage assignment
             and genetic composition/ancestry methods to help researchers evaluate genomic
             relationships through an accessible, web-based interface without requiring
-            command-line tools.
+            command-line tools. Pedigree validation, Mendelian error analysis and
+            parentage assignment build on the 'BIGpopA' package
+            (<https://CRAN.R-project.org/package=BIGpopA>). Ancestry estimation uses
+            the sparse non-negative matrix
+            factorization method of Frichot et al. (2014) <doi:10.1534/genetics.113.160572>
+            as implemented in the 'LEA' package by Frichot and Francois (2015)
+            <doi:10.1111/2041-210X.12382>. Line and breed composition are
+            estimated using the breed composition regression method of Funkhouser
+            et al. (2017) <doi:10.2527/tas2016.0003>, extended to polyploid species
+            by Sandercock et al. (2025) <doi:10.1002/tpg2.70067>.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

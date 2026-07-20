@@ -1,3 +1,13 @@
+# Familia 1.0.3
+
+* Addressed CRAN reviewer feedback: removed the redundant "R" from the Title;
+  wrapped software names ('shiny', 'LEA') in single quotes in the Title and
+  Description; added method references to the Description (sNMF, the 'LEA'
+  package, the breed-composition methods of Funkhouser et al. and Sandercock
+  et al., and the 'BIGpopA' package) with DOIs or canonical URLs; and replaced
+  the `\dontrun{}` example wrapper in `run_app()`
+  with `if(interactive()){}`.
+
 # Familia 1.0.2
 
 *Fixed test directory for CRAN submission

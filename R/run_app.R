@@ -8,7 +8,7 @@
 #'   the side effect of launching the Familia app.
 #'
 #' @examples
-#' \dontrun{
+#' if(interactive()){
 #'   run_app()
 #' }
 #'

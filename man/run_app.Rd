@@ -44,7 +44,7 @@ the side effect of launching the Familia app.
 Run the Shiny Application
 }
 \examples{
-\dontrun{
+if(interactive()){
   run_app()
 }
 
