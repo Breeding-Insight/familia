@@ -119,10 +119,10 @@ Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Famili
 #### Also cite:
 * **For sNMF:**
     - [Frichot et.al](https://pmc.ncbi.nlm.nih.gov/articles/pmid/24496008/) for original methods
-    - [Frichot et.al](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12382) for LEA package
+    - [Frichot et.al](https://doi.org/10.1111/2041-210X.12382) for LEA package
 * **BreedTools<sup>poly</sup>:**
     - [Funkhouser et al.](https://doi.org/10.2527/tas2016.0003) for original breedTools methods  
-    - [Sandercock et al.](https://acsess.onlinelibrary.wiley.com/doi/10.1002/tpg2.70067) for methods expansion to polyploidy  
+    - [Sandercock et al.](https://doi.org/10.1002/tpg2.70067) for methods expansion to polyploidy  
 
 ## License
 Familia is released under the Apache License, Version 2.0.
