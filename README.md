@@ -121,7 +121,7 @@ Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Famili
     - [Frichot et.al](https://pmc.ncbi.nlm.nih.gov/articles/pmid/24496008/) for original methods
     - [Frichot et.al](https://doi.org/10.1111/2041-210X.12382) for LEA package
 * **BreedTools<sup>poly</sup>:**
-    - [Funkhouser et al.](https://doi.org/10.2527/tas2016.0003) for original breedTools methods  
+    - [Funkhouser et al.](https://doi.org/10.2527/tas2016.0003) for original BreedTools methods  
     - [Sandercock et al.](https://doi.org/10.1002/tpg2.70067) for methods expansion to polyploidy  
 
 ## License

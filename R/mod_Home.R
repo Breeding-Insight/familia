@@ -47,7 +47,7 @@ mod_Home_ui <- function(id){
               <li>Software Tools</li>
               <li>Analysis</li>
             </ul>
-            Breeding Insight is funded by the U.S. Department of Agriculture (USDA) Agricultural Research Service (ARS) through Cornell University.
+            Breeding Insight is funded by the U.S. Department of Agriculture (USDA) Agricultural Research Service (ARS) through University of Florida.
             <div style='text-align: center; margin-top: 20px;'>
               <img src='www/BreedingInsight.png' alt='Breeding Insight' style='width: 85px; height: 85px;'>
             </div>"
