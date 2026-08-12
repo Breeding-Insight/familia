@@ -1,3 +1,10 @@
+# Familia 1.0.4
+
+* Updated the funding attribution banner on the Home tab to read
+  "University of Florida" instead of "Cornell University", reflecting the
+  maintainer's current institution.
+* Added `URL` and `BugReports` fields to DESCRIPTION.
+
 # Familia 1.0.3
 
 * Addressed CRAN reviewer feedback: removed the redundant "R" from the Title;

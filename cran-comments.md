@@ -2,7 +2,14 @@
 
 0 errors | 0 warnings | 1 note
 
-* This is a resubmission.
+* This is an update to a package already on CRAN
+  (version 1.0.3, published 2026-07-29).
+
+# Familia 1.0.4
+* Updated the funding attribution banner on the Home tab to read
+  "University of Florida" instead of "Cornell University", reflecting the
+  maintainer's current institution.
+* Added URL and BugReports fields to DESCRIPTION.
 
 # Familia 1.0.3
 * This is a resubmission addressing the CRAN reviewer's comments. In this version I have:
