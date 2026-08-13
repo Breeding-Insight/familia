@@ -2,7 +2,7 @@
 
 * Updated the funding attribution banner on the Home tab to read
   "University of Florida" instead of "Cornell University", reflecting the
-  maintainer's current institution.
+  correct institution.
 * Added `URL` and `BugReports` fields to DESCRIPTION.
 
 # Familia 1.0.3
