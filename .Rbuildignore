@@ -17,3 +17,5 @@
 ^inst/snmf_example\.vcf$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
+^\.gitignore$
+^inst/\.gitignore$

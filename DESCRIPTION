@@ -1,6 +1,6 @@
 Package: Familia
 Title: 'shiny' Application for Population Structure and Ancestry Assessments
-Version: 1.0.3
+Version: 1.0.4
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
@@ -26,6 +26,8 @@ Description: Provides a 'shiny' web application developed by the Breeding Insigh
             et al. (2017) <doi:10.2527/tas2016.0003>, extended to polyploid species
             by Sandercock et al. (2025) <doi:10.1002/tpg2.70067>.
 License: Apache License (>= 2)
+URL: https://github.com/Breeding-Insight/Familia
+BugReports: https://github.com/Breeding-Insight/Familia/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.4.0)
