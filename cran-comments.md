@@ -2,23 +2,19 @@
 
 0 errors | 0 warnings | 1 note
 
-* This is an update to a package already on CRAN
-  (version 1.0.3, published 2026-07-29).
+* This is an update to a package already on CRAN.
+
+# Familia 2.0.0
+* Added a Ploidy selector to the Find Parentage and Validate Pedigree tabs,
+  enabling pedigree validation and parentage assignment for any ploidy through
+  'BIGpopA' (>= 2.0.0). Even ploidy uses the full Mendelian test; odd ploidy
+  uses a homozygosity-based check. Default behavior (diploid, ploidy = 2) is
+  unchanged.
 
 # Familia 1.0.4
 * Updated the funding attribution banner on the Home tab to read
-  "University of Florida" instead of "Cornell University", reflecting the
-  maintainer's current institution.
+  "University of Florida" instead of "Cornell University".
 * Added URL and BugReports fields to DESCRIPTION.
-
-## Note on submission timing
-
-This update follows 1.0.3 more closely than the usual 1-2 month interval.
-The released version displays an incorrect funding attribution in the running
-application: it credits Cornell University, but the USDA-ARS award supporting
-Breeding Insight is administered through University of Florida. We would like
-to correct this misattribution promptly rather than leave it on CRAN for
-another release cycle. Apologies for the quick turnaround.
 
 # Familia 1.0.3
 * This is a resubmission addressing the CRAN reviewer's comments. In this version I have:

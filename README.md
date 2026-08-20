@@ -51,6 +51,7 @@ range of plant and animal breeding programs.
 - Automatic classification of trios into Pass, Fail, Low Markers,
   No Genotype Data, Founders, and Missing Parents categories
 - Optional founders file to preserve known founder trios
+- Configurable ploidy: even ploidy uses the full Mendelian test, odd ploidy (e.g. triploid) a homozygosity-based check
 - Exportable corrected pedigree and per-status result tables
 
 ### Parentage Assignment
@@ -58,6 +59,7 @@ range of plant and animal breeding programs.
   and best match assignment methods
 - Configurable error threshold and minimum marker filters
 - Tie detection and self-match exclusion options
+- Configurable ploidy for diploid and polyploid data
 - Results classified as Pass, High Error, or Low Markers
 - Exportable full results and per-status tables
 
@@ -114,7 +116,7 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 1.0.2. https://github.com/Breeding-Insight/Familia/
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 2.0.0. https://github.com/Breeding-Insight/Familia/
 
 #### Also cite:
 * **For sNMF:**
