@@ -1,3 +1,4 @@
+[![CRAN status](https://www.r-pkg.org/badges/version/Familia)](https://CRAN.R-project.org/package=Familia)
 [![R-CMD-check](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml)
 [![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
@@ -82,10 +83,16 @@ range of plant and animal breeding programs.
 
 ## Installation and Running the App
 
-Familia uses a golem application structure, allowing it to be installed
-like a standard R package.
+Familia uses a golem application structure and is installed like a standard R
+package.
 
-### Install from GitHub
+### Install from CRAN
+
+```r
+install.packages("Familia")
+```
+
+### Install the development version from GitHub
 
 ```r
 if (!requireNamespace("remotes", quietly = TRUE)) {
@@ -116,7 +123,9 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 2.0.0. https://github.com/Breeding-Insight/Familia/
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.0.0. https://CRAN.R-project.org/package=Familia
+
+You can obtain this citation (including a BibTeX entry) at any time by running `citation("Familia")` in R.
 
 #### Also cite:
 * **For sNMF:**

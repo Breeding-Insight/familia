@@ -4,6 +4,12 @@
 
 * This is an update to a package already on CRAN.
 
+## Dependencies
+
+This version requires 'BIGpopA' (>= 2.0.0) for its new ploidy features.
+'BIGpopA' 2.0.0 has been submitted to CRAN; please process it first (or
+alongside this submission) so the dependency resolves.
+
 # Familia 2.0.0
 * Added a Ploidy selector to the Find Parentage and Validate Pedigree tabs,
   enabling pedigree validation and parentage assignment for any ploidy through
