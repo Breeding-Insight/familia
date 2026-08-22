@@ -120,7 +120,8 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
         "<strong>Upload a Genotypes File</strong> - tab-separated .txt/.tsv or comma-separated .csv
-        with an <code>id</code> column followed by marker columns coded as <code>0</code>, <code>1</code>, <code>2</code>."
+        with an <code>id</code> column followed by marker columns coded as allele-B dosage
+        (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>; e.g. <code>0</code>, <code>1</code>, <code>2</code> for diploid)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload a Parents File</strong> - must include an <code>id</code> column and an optional
@@ -130,7 +131,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
         "<strong>Upload a Progeny File</strong> - must include an <code>id</code> column."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Select a Method</strong> and configure parameters (error threshold, minimum markers, ties, selfing, self-match)."
+        "<strong>Select a Method</strong> and configure parameters (error threshold, minimum markers, ploidy, ties, selfing, self-match)."
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Parentage Assignment</strong> to execute the analysis.")),
       shiny::tags$li(shiny::HTML(
@@ -232,7 +233,25 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
+
+    collapse_fn(
+      panel_id     = pid("fp_help_ploidy"),
+      icon_name    = "dna",
+      label        = "Ploidy",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Ploidy level of the species, matching how the genotypes are dosage-coded
+          (2 = diploid, 4 = tetraploid, ...). Even ploidy uses the full polysomic
+          Mendelian test across all co-genotyped markers. Odd ploidy (e.g. triploid),
+          where balanced gametes are undefined, automatically switches to a
+          homozygosity-only check that flags a marker only when the progeny is
+          homozygous and a candidate parent is the opposite homozygote (reduced power).
+          Default: 2.",
+          style = "margin-bottom: 0;"
+        )
+      )
+    ),
+
     collapse_fn(
       panel_id     = pid("fp_help_show_ties"),
       icon_name    = "equals",

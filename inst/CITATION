@@ -1,0 +1,16 @@
+bibentry(
+  bibtype = "Manual",
+  title   = "Familia: 'shiny' Application for Population Structure and Ancestry Assessments",
+  author  = c(person(given='Josue',
+                    family='Chinchilla-Vargas',
+                    email='josue.chinchilla@ufl.edu',
+                    role=c('aut','cre')),
+             person(given=c('Alexander','M.'),
+                    family='Sandercock',
+                    role=c('aut')),
+             person('Breeding Insight Team',
+                    role=c('aut'))),
+  year = "2026",
+  note = "R package version 2.0.0",
+  url  = "https://CRAN.R-project.org/package=Familia"
+)

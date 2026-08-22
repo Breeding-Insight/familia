@@ -37,6 +37,9 @@ mod_validate_ped_ui <- function(id) {
           shiny::numericInput(ns("min_markers"),
                               "Min Markers",
                               value = 10, min = 1, step = 1),
+          shiny::numericInput(ns("ploidy"),
+                              "Ploidy",
+                              value = 2, min = 2, max = 20, step = 1),
           shiny::hr(),
           shiny::actionButton(ns("run_validate"), "Run Validation"),
           shiny::hr(),
@@ -74,8 +77,9 @@ mod_validate_ped_ui <- function(id) {
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
                     <li>Upload a pedigree file with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as 0, 1, 2.</li>
+                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
                     <li>Optionally upload a founders file (single column of founder IDs) to preserve founder trios.</li>
+                    <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
                     <li>Results are split into:</li>
                     <ul>
@@ -268,6 +272,7 @@ mod_validate_ped_server <- function(id, parent_session) {
           trio_error_threshold          = as.numeric(input$trio_error_threshold),
           min_markers                   = as.integer(input$min_markers),
           single_parent_error_threshold = as.numeric(input$single_parent_error_threshold),
+          ploidy                        = as.integer(input$ploidy),
           verbose                       = FALSE,
           plot_results                  = TRUE
         )

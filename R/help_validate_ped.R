@@ -97,7 +97,8 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload a Genotypes File</strong> - must include an <code>id</code> column followed
-        by marker columns coded as <code>0</code>, <code>1</code>, <code>2</code>."
+        by marker columns coded as allele-B dosage (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>;
+        e.g. <code>0</code>, <code>1</code>, <code>2</code> for diploid)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Optionally upload a Founders File</strong> - a single column of founder IDs (.txt).
@@ -105,7 +106,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Set parameters</strong> - trio error threshold, single-parent error threshold,
-        and minimum markers."
+        minimum markers, and ploidy."
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Validation</strong> to evaluate all trios.")),
       shiny::tags$li(shiny::HTML(
@@ -159,9 +160,27 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
+
+    collapse_fn(
+      panel_id     = pid("vp_help_ploidy"),
+      icon_name    = "dna",
+      label        = "Ploidy",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Ploidy level of the species, matching how the genotypes are dosage-coded
+          (2 = diploid, 4 = tetraploid, ...). Even ploidy uses the full polysomic
+          Mendelian test across all co-genotyped markers. Odd ploidy (e.g. triploid),
+          where balanced gametes are undefined, automatically switches to a
+          homozygosity-only check that flags a marker only when the progeny is
+          homozygous and a parent is the opposite homozygote (reduced power).
+          Default: 2.",
+          style = "margin-bottom: 0;"
+        )
+      )
+    ),
+
     shiny::hr(style = "margin: 8px 0;"),
-    
+
     # Result categories
     shiny::h6(
       shiny::tagList(shiny::icon("triangle-exclamation"), " Result Categories - What Each Means"),

@@ -40,6 +40,7 @@ mod_find_parentage_ui <- function(id) {
           ),
           shiny::numericInput(ns("error_threshold"), "Error Threshold (%)",   value = 5.0,  min = 0, max = 100, step = 0.1),
           shiny::numericInput(ns("min_markers"),     "Min Markers",           value = 10,   min = 1, step = 1),
+          shiny::numericInput(ns("ploidy"),          "Ploidy",                value = 2,    min = 2, max = 20, step = 1),
           shiny::checkboxInput(ns("show_ties"),            "Show ties",              value = TRUE),
           shiny::checkboxInput(ns("allow_parent_selfing"), "Allow parent selfing",   value = FALSE),
           shiny::checkboxInput(ns("exclude_self_match"),   "Exclude self-match",     value = TRUE),
@@ -79,9 +80,10 @@ mod_find_parentage_ui <- function(id) {
               shiny::fluidRow(
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as 0, 1, 2.</li>
+                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
                     <li>Upload a parents file with an <code>id</code> column and an optional <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>).</li>
                     <li>Upload a progeny file with an <code>id</code> column.</li>
+                    <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Select a method and set parameters, then click <strong>Run Parentage Assignment</strong>.</li>
                     <li>Results are split into:</li>
                     <ul>
@@ -267,6 +269,7 @@ mod_find_parentage_server <- function(id, parent_session) {
           show_ties            = input$show_ties,
           allow_parent_selfing = input$allow_parent_selfing,
           exclude_self_match   = input$exclude_self_match,
+          ploidy               = as.integer(input$ploidy),
           verbose              = FALSE,
           plot_results         = TRUE
         )

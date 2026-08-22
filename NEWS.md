@@ -1,3 +1,13 @@
+# Familia 2.0.0
+
+* Added a **Ploidy** selector to the Find Parentage and Validate Pedigree tabs,
+  passed through to 'BIGpopA' so pedigree validation and parentage assignment
+  now support any ploidy. Even ploidy uses the full polysomic Mendelian test;
+  odd ploidy (e.g. triploid) uses a homozygosity-based check. Default is 2 (diploid).
+* Updated the in-app Instructions and Help panels to document the Ploidy option
+  and to generalize genotype dosage coding to 0, 1, ..., ploidy.
+* Requires 'BIGpopA' (>= 2.0.0).
+
 # Familia 1.0.4
 
 * Updated the funding attribution banner on the Home tab to read

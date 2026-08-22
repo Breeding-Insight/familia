@@ -1,5 +1,7 @@
+
 [![R-CMD-check](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml)
 [![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
+[![CRAN status](https://www.r-pkg.org/badges/version/Familia)](https://CRAN.R-project.org/package=Familia)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/issues)
@@ -51,6 +53,7 @@ range of plant and animal breeding programs.
 - Automatic classification of trios into Pass, Fail, Low Markers,
   No Genotype Data, Founders, and Missing Parents categories
 - Optional founders file to preserve known founder trios
+- Configurable ploidy: even ploidy uses the full Mendelian test, odd ploidy (e.g. triploid) a homozygosity-based check
 - Exportable corrected pedigree and per-status result tables
 
 ### Parentage Assignment
@@ -58,6 +61,7 @@ range of plant and animal breeding programs.
   and best match assignment methods
 - Configurable error threshold and minimum marker filters
 - Tie detection and self-match exclusion options
+- Configurable ploidy for diploid and polyploid data
 - Results classified as Pass, High Error, or Low Markers
 - Exportable full results and per-status tables
 
@@ -80,10 +84,16 @@ range of plant and animal breeding programs.
 
 ## Installation and Running the App
 
-Familia uses a golem application structure, allowing it to be installed
-like a standard R package.
+Familia uses a golem application structure and is installed like a standard R
+package.
 
-### Install from GitHub
+### Install from CRAN
+
+```r
+install.packages("Familia")
+```
+
+### Install the development version from GitHub
 
 ```r
 if (!requireNamespace("remotes", quietly = TRUE)) {
@@ -114,7 +124,9 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: R Shiny Application for Population Structure and Ancestry Assessments. R package version 1.0.2. https://github.com/Breeding-Insight/Familia/
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.0.0. https://CRAN.R-project.org/package=Familia
+
+You can obtain this citation (including a BibTeX entry) at any time by running `citation("Familia")` in R.
 
 #### Also cite:
 * **For sNMF:**
