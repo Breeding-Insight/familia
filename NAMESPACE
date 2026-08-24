@@ -8,46 +8,64 @@ import(openxlsx)
 import(shiny)
 import(shinyWidgets)
 import(shinydisconnect)
-importFrom(DT,DTOutput)
-importFrom(DT,renderDT)
-importFrom(bs4Dash,box)
-importFrom(bs4Dash,bs4Badge)
-importFrom(bs4Dash,bs4DashNavbar)
-importFrom(bs4Dash,bs4DashPage)
-importFrom(bs4Dash,bs4DashSidebar)
-importFrom(bs4Dash,dashboardBody)
-importFrom(bs4Dash,dashboardFooter)
-importFrom(bs4Dash,menuItem)
-importFrom(bs4Dash,menuSubItem)
-importFrom(bs4Dash,renderValueBox)
-importFrom(bs4Dash,sidebarMenu)
-importFrom(bs4Dash,tabItem)
-importFrom(bs4Dash,tabItems)
-importFrom(bs4Dash,valueBox)
-importFrom(bs4Dash,valueBoxOutput)
-importFrom(curl,curl_fetch_memory)
-importFrom(curl,new_handle)
-importFrom(golem,activate_js)
-importFrom(golem,add_resource_path)
-importFrom(golem,bundle_resources)
-importFrom(golem,favicon)
-importFrom(golem,with_golem_options)
-importFrom(graphics,axis)
-importFrom(graphics,hist)
-importFrom(graphics,points)
-importFrom(httr,GET)
-importFrom(httr,content)
-importFrom(httr,status_code)
+importFrom(DT,
+  DTOutput,
+  renderDT
+)
+importFrom(bs4Dash,
+  box,
+  bs4Badge,
+  bs4DashNavbar,
+  bs4DashPage,
+  bs4DashSidebar,
+  dashboardBody,
+  dashboardFooter,
+  menuItem,
+  menuSubItem,
+  renderValueBox,
+  sidebarMenu,
+  tabItem,
+  tabItems,
+  valueBox,
+  valueBoxOutput
+)
+importFrom(curl,
+  curl_fetch_memory,
+  new_handle
+)
+importFrom(golem,
+  activate_js,
+  add_resource_path,
+  bundle_resources,
+  favicon,
+  with_golem_options
+)
+importFrom(graphics,
+  axis,
+  hist,
+  points
+)
+importFrom(httr,
+  GET,
+  content,
+  status_code
+)
 importFrom(scales,comma_format)
-importFrom(shiny,NS)
-importFrom(shiny,shinyApp)
-importFrom(shiny,tagList)
+importFrom(shiny,
+  NS,
+  shinyApp,
+  tagList
+)
 importFrom(shinydisconnect,disconnectMessage)
-importFrom(shinyjs,disable)
-importFrom(shinyjs,enable)
-importFrom(shinyjs,useShinyjs)
-importFrom(utils,capture.output)
-importFrom(utils,packageVersion)
-importFrom(utils,sessionInfo)
-importFrom(utils,str)
-importFrom(utils,write.table)
+importFrom(shinyjs,
+  disable,
+  enable,
+  useShinyjs
+)
+importFrom(utils,
+  capture.output,
+  packageVersion,
+  sessionInfo,
+  str,
+  write.table
+)
