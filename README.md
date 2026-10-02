@@ -1,12 +1,16 @@
-
+<!-- badges: start -->
+[![Development Status](https://img.shields.io/badge/status-active%20development-yellow)](https://github.com/Breeding-Insight/Familia)
 [![R-CMD-check](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml)
-[![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![CRAN status](https://www.r-pkg.org/badges/version/Familia)](https://CRAN.R-project.org/package=Familia)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/Familia)](https://cran.r-project.org/package=Familia)
+[![CRAN monthly downloads](https://cranlogs.r-pkg.org/badges/Familia)](https://cran.r-project.org/package=Familia)
+[![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/pulls)
 [![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/Familia?include_prereleases)](https://github.com/Breeding-Insight/Familia/releases/latest)
+<!-- badges: end -->
 
 <div align="center">
 <img width="250" height="250" alt="Familia_logo" src="https://github.com/user-attachments/assets/600951c0-65e5-4761-93a6-56d4c9a50ad0"/>

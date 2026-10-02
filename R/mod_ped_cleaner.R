@@ -223,8 +223,10 @@ mod_ped_cleaner_server <- function(id, parent_session) {
                             stringsAsFactors = FALSE, check.names = FALSE)
         }
         
+        # Column names are matched ignoring case, spaces and dots (as in BIGpopA)
         required_cols <- c("id", "male_parent", "female_parent")
-        missing_cols  <- setdiff(required_cols, colnames(ped_raw))
+        norm_cols     <- gsub("[ .-]+", "_", tolower(trimws(colnames(ped_raw))))
+        missing_cols  <- setdiff(required_cols, norm_cols)
         if (length(missing_cols) > 0) {
           stop(paste0(
             "Missing required column(s): ",

@@ -112,20 +112,32 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Reference Genotypes</strong> - a tab-separated <code>.txt</code> file with
-  samples in rows and SNP markers in columns. The first column must be <code>ID</code>.
-  Missing values should be coded as <code>NA</code>."
+        "<strong>Upload Reference Genotypes</strong> - either a tab-separated <code>.txt</code> or
+  comma-separated <code>.csv</code> file with samples in rows and SNP markers in columns (first
+  column <code>ID</code>, missing values coded as <code>NA</code>), a VCF
+  (<code>.vcf</code> / <code>.vcf.gz</code>), or a PLINK <code>.ped</code> file (diploid only).
+  For a <code>.ped</code>, a <strong>Reference Map (.map)</strong> input appears; upload the matching
+  <code>.map</code> file there."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload Reference IDs</strong> - a tab-separated <code>.txt</code> file assigning
   each reference sample to a group/line. Each column is one group; values are sample IDs."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Validation Genotypes</strong> - same format as the reference genotype file
-  (samples in rows, SNP markers in columns, first column named <code>ID</code>)."
+        "<strong>Upload Validation Genotypes</strong> - same formats as the reference genotype file.
+  Reference and validation files can be different formats (e.g. a VCF reference and a
+  .txt validation file), but marker names must match. If either file is a <code>.ped</code>,
+  both must be <code>.ped</code> files, each with its <code>.map</code> (a <strong>Validation Map
+  (.map)</strong> input appears for a validation <code>.ped</code>)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Set Ploidy</strong> - enter the ploidy level of the species (e.g., 2 for diploid, 4 for tetraploid)."
+      )),
+      shiny::tags$li(shiny::HTML(
+        "<strong>Set Assignment threshold (%)</strong> - each sample is assigned to the line with its
+  highest estimated proportion only if that proportion is at least this value; otherwise its
+  Predicted line is <code>Undetermined</code>. The default of 0 always assigns the highest line.
+  Changing the threshold updates the results immediately, without re-running the estimation."
       )),
       shiny::tags$li(shiny::HTML("<strong>Run Estimation</strong> - computes ancestry proportions for each validation sample.")),
       shiny::tags$li(shiny::HTML("<strong>Review</strong> the Results Table and Ancestry Plot tabs.")),
@@ -144,10 +156,10 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("pbt_help_ref_genos"),
       icon_name    = "dna",
-      label        = "Reference & Validation Genotypes (.txt)",
+      label        = "Reference & Validation Genotypes (.txt / .csv)",
       body_content = shiny::tagList(
         shiny::p(
-          "Tab-separated file with an ID column followed by one column per SNP marker.
+          "Tab-separated (.txt) or comma-separated (.csv) file with an ID column followed by one column per SNP marker.
            Genotypes are encoded as dosage counts (e.g., 0, 1, 2 for diploid).
            Missing genotypes should be coded as NA.",
           style = "margin-bottom: 6px;"
@@ -164,7 +176,52 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
         )
       )
     ),
-    
+
+    collapse_fn(
+      panel_id     = pid("pbt_help_vcf"),
+      icon_name    = "file-code",
+      label        = "Reference & Validation Genotypes (.vcf / .vcf.gz)",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Standard VCF with a GT field. Each call is converted to the dosage of the ALT
+           (allele B) allele using the selected Ploidy, e.g. 0/1 = 1 for diploid and
+           0/1/1/1 = 3 for tetraploid. Sample names come from the VCF header and marker
+           names from the ID column (or CHROM_POS when IDs are missing or duplicated).",
+          style = "margin-bottom: 6px;"
+        ),
+        shiny::p(
+          "Multiallelic markers are dropped, and calls whose ploidy differs from the selected
+           Ploidy are set to missing. Marker names must match between the reference and
+           validation files.",
+          style = "color: #6c757d; font-size: 11px;"
+        )
+      )
+    ),
+
+    collapse_fn(
+      panel_id     = pid("pbt_help_ped"),
+      icon_name    = "table-cells",
+      label        = "Reference & Validation Genotypes (PLINK .ped + .map)",
+      body_content = shiny::tagList(
+        shiny::p(
+          "PLINK 1 .ped file: six pedigree columns (only the individual ID in column 2 is
+           used) followed by two allele columns per marker. Diploid only, so Ploidy must be 2.
+           Missing alleles are coded 0. When a .ped is uploaded, a Map (.map) input appears
+           below it; the .map is required and supplies the marker names (column 2, or
+           CHROM_POSITION when the name is missing).",
+          style = "margin-bottom: 6px;"
+        ),
+        shiny::p(
+          "If either genotype file is a .ped, both must be .ped files. Markers are matched by
+           their .map names, so the two files can list markers in a different order. The
+           counted allele at each marker is taken from the reference file and applied to the
+           validation file, so both are coded the same way even when a marker is monomorphic
+           in the validation samples.",
+          style = "color: #6c757d; font-size: 11px;"
+        )
+      )
+    ),
+
     collapse_fn(
       panel_id     = pid("pbt_help_ref_ids"),
       icon_name    = "users",
@@ -260,7 +317,8 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
         "<strong>Results Table</strong> - downloadable as <code>.xlsx</code> via <em>Save Excel File</em>.
-         Contains each validation sample's estimated ancestry proportion per group and its predicted line."
+         Contains each validation sample's estimated ancestry proportion per group and its predicted line
+         (<code>Undetermined</code> when the highest proportion is below the assignment threshold)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Ancestry Plot</strong> - stacked bar chart of ancestry proportions.

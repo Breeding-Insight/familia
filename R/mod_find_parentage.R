@@ -23,7 +23,7 @@ mod_find_parentage_ui <- function(id) {
             "Upload genotype, parents, and progeny files to assign parentage.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
-          shiny::fileInput(ns("genotypes_file"), "Genotypes File", accept = c(".txt", ".tsv", ".csv")),
+          shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           shiny::fileInput(ns("parents_file"),   "Parents File",   accept = c(".txt", ".tsv", ".csv")),
           shiny::fileInput(ns("progeny_file"),   "Progeny File",   accept = c(".txt", ".tsv", ".csv")),
           shiny::hr(),
@@ -80,7 +80,7 @@ mod_find_parentage_ui <- function(id) {
               shiny::fluidRow(
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
+                    <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Upload a parents file with an <code>id</code> column and an optional <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>).</li>
                     <li>Upload a progeny file with an <code>id</code> column.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
@@ -249,7 +249,7 @@ mod_find_parentage_server <- function(id, parent_session) {
           }
         }
         
-        geno_raw    <- read_flex_ui(input$genotypes_file)
+        geno_raw    <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
         parents_raw <- read_flex_ui(input$parents_file)
         progeny_raw <- read_flex_ui(input$progeny_file)
         

@@ -24,7 +24,7 @@ mod_validate_ped_ui <- function(id) {
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
           shiny::fileInput(ns("pedigree_file"),  "Pedigree File",  accept = c(".txt", ".tsv", ".csv")),
-          shiny::fileInput(ns("genotypes_file"), "Genotypes File", accept = c(".txt", ".tsv", ".csv")),
+          shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           shiny::fileInput(ns("founders_file"),  "Founders File",    accept = c(".txt")),
           shiny::hr(),
           shiny::p("Parameters:", style = "color: #6c757d; font-size: 12px; margin-bottom: 5px;"),
@@ -77,7 +77,7 @@ mod_validate_ped_ui <- function(id) {
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
                     <li>Upload a pedigree file with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
+                    <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Optionally upload a founders file (single column of founder IDs) to preserve founder trios.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
@@ -239,8 +239,7 @@ mod_validate_ped_server <- function(id, parent_session) {
         )
         
         ped_ext  <- tolower(tools::file_ext(input$pedigree_file$name))
-        geno_ext <- tolower(tools::file_ext(input$genotypes_file$name))
-        
+
         ped_raw <- if (ped_ext == "csv") {
           utils::read.csv(input$pedigree_file$datapath,  header = TRUE,
                           stringsAsFactors = FALSE, check.names = FALSE)
@@ -249,13 +248,7 @@ mod_validate_ped_server <- function(id, parent_session) {
                             stringsAsFactors = FALSE, check.names = FALSE)
         }
         
-        geno_raw <- if (geno_ext == "csv") {
-          utils::read.csv(input$genotypes_file$datapath, header = TRUE,
-                          stringsAsFactors = FALSE, check.names = FALSE)
-        } else {
-          utils::read.table(input$genotypes_file$datapath, header = TRUE, sep = "\t",
-                            stringsAsFactors = FALSE, check.names = FALSE)
-        }
+        geno_raw <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
         
         founders_path <- if (!is.null(input$founders_file)) input$founders_file$datapath else NULL
         
