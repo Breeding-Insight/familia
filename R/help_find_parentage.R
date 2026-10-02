@@ -119,9 +119,15 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ol(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Genotypes File</strong> - tab-separated .txt/.tsv or comma-separated .csv
-        with an <code>id</code> column followed by marker columns coded as allele-B dosage
-        (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>; e.g. <code>0</code>, <code>1</code>, <code>2</code> for diploid)."
+        "<strong>Upload a Genotypes File</strong> - either a tab-separated .txt/.tsv or comma-separated
+        .csv with an <code>id</code> column followed by marker columns coded as allele-B dosage
+        (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>; e.g. <code>0</code>, <code>1</code>,
+        <code>2</code> for diploid), or a VCF (<code>.vcf</code> / <code>.vcf.gz</code>). VCF
+        <code>GT</code> calls are converted to allele-B (ALT) dosages using the selected Ploidy;
+        multiallelic markers are dropped and calls with a different ploidy are set to missing.
+        PLINK <code>.ped</code> files are also accepted (diploid only, Ploidy = 2); no
+        <code>.map</code> is needed. Missing alleles are coded <code>0</code>, and the
+        alphabetically last allele at each marker is counted (e.g. <code>2</code> in 1/2 coding)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload a Parents File</strong> - must include an <code>id</code> column and an optional

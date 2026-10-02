@@ -25,10 +25,13 @@ mod_polybreedtools_ui <- function(id) {
           collapsed   = FALSE,
           status      = "info",
           solidHeader = TRUE,
-          fileInput(ns("reference_file"), "Reference Genotypes", accept = ".txt"),
-          fileInput(ns("ref_ids_file"),   "Reference IDs",       accept = ".txt"),
-          fileInput(ns("validation_file"),"Validation Genotypes", accept = ".txt"),
+          fileInput(ns("reference_file"), "Reference Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)",  accept = genotype_upload_accept),
+          uiOutput(ns("reference_map_ui")),    # shown only for a .ped reference
+          fileInput(ns("ref_ids_file"),   "Reference IDs",                                          accept = ".txt"),
+          fileInput(ns("validation_file"),"Validation Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
+          uiOutput(ns("validation_map_ui")),   # shown only for a .ped validation file
           numericInput(ns("ploidy"), "Ploidy", value = 2, min = 1, max = 20, step = 1),
+          numericInput(ns("assign_threshold"), "Assignment threshold (%)", value = 0, min = 0, max = 100, step = 1),
           actionButton(ns("run"), "Run Estimation"),
           shiny::hr(),
           shinyjs::disabled(
@@ -69,9 +72,10 @@ mod_polybreedtools_ui <- function(id) {
                       <a href="https://www.animalsciencepublications.org/publications/tas/articles/1/1/36" target="_blank">Funkhouser et al. (2017)</a>.</li>
                     <li><strong>Input format:</strong></li>
                     <ul>
-                      <li><strong>Reference Genotypes:</strong> A genotype matrix (.txt) with samples in rows and SNP markers in columns. The first column must be <code>ID</code> containing sample IDs. Missing values should be coded as <code>NA</code>.</li>
-                      <li><strong>Reference IDs:</strong> A two-column .txt file with population labels. Header example: <code>Group1</code>, <code>Group2</code>.</li>
-                      <li><strong>Validation Genotypes:</strong> Same format as the reference genotype file.</li>
+                      <li><strong>Reference Genotypes:</strong> Either a genotype matrix (.txt tab-separated or .csv) with samples in rows and SNP markers in columns, where the first column must be <code>ID</code> containing sample IDs and missing values are coded as <code>NA</code>; a VCF file (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to allele-B dosages using the selected ploidy; or a PLINK <code>.ped</code> file (diploid only) together with its <code>.map</code> file, which supplies the marker names.</li>
+                      <li><strong>Assignment threshold (%):</strong> A sample is assigned to its highest-proportion line only if that proportion meets the threshold; otherwise it is labelled <code>Undetermined</code>. Use 0 to always assign the highest line. Changes apply immediately without re-running.</li>
+                      <li><strong>Reference IDs:</strong> A .txt file with one column per population, listing the reference sample IDs. Header example: <code>Group1</code>, <code>Group2</code>.</li>
+                      <li><strong>Validation Genotypes:</strong> Same formats as the reference genotype file. Reference and validation files do not need to be the same format, but marker names must match. The exception is <code>.ped</code>: if either file is a <code>.ped</code>, both must be <code>.ped</code> files, each uploaded with its <code>.map</code>. Markers are matched by the names in the <code>.map</code> files, so their order does not need to match.</li>
                     </ul>
                   </ul>
                 ')))
@@ -225,12 +229,79 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     scales::percent_format(accuracy = 0.1)(x)
   }
   
+  #  PLINK .map inputs: shown when the matching genotype upload is a .ped
+  output$reference_map_ui <- renderUI({
+    req(input$reference_file)
+    if (genotype_upload_format(input$reference_file) != "ped") return(NULL)
+    fileInput(ns("reference_map"), "Reference Map (.map)", accept = ".map")
+  })
+  output$validation_map_ui <- renderUI({
+    req(input$validation_file)
+    if (genotype_upload_format(input$validation_file) != "ped") return(NULL)
+    fileInput(ns("validation_map"), "Validation Map (.map)", accept = ".map")
+  })
+
+  # Track maps separately so a new .ped upload never reuses an old .map
+  ped_maps <- reactiveValues(reference = NULL, validation = NULL)
+  observeEvent(input$reference_file,  { ped_maps$reference  <- NULL })
+  observeEvent(input$validation_file, { ped_maps$validation <- NULL })
+  observeEvent(input$reference_map,   { ped_maps$reference  <- input$reference_map })
+  observeEvent(input$validation_map,  { ped_maps$validation <- input$validation_map })
+
   result_data <- reactiveVal(NULL)
   poly_items  <- reactiveValues(
+    prediction        = NULL,   # numeric proportions, samples in rows
     pred_results      = NULL,
     pred_results_long = NULL,
     id_order          = NULL
   )
+
+  #  Line assignment: the line with the highest proportion, or "Undetermined"
+  #  when that proportion is below the assignment threshold. Recomputed when
+  #  the threshold changes, without re-running the estimation.
+  observe({
+    req(poly_items$prediction)
+    prediction        <- poly_items$prediction
+    columns_to_select <- colnames(prediction)
+
+    threshold <- suppressWarnings(as.numeric(input$assign_threshold))
+    if (length(threshold) == 0 || is.na(threshold)) threshold <- 0
+    threshold <- min(max(threshold, 0), 100) / 100
+
+    top_value      <- apply(prediction[, columns_to_select, drop = FALSE], 1, max, na.rm = TRUE)
+    top_line       <- columns_to_select[max.col(prediction[, columns_to_select, drop = FALSE], ties.method = "first")]
+    predicted_line <- ifelse(top_value >= threshold, top_line, "Undetermined")
+
+    pred_results <- tibble::rownames_to_column(prediction, var = "ID")
+    pred_results <- dplyr::mutate(pred_results, `Predicted line` = predicted_line)
+    pred_results <- dplyr::mutate(pred_results, dplyr::across(dplyr::all_of(columns_to_select), ~format_percent(.x)))
+
+    id_order <- data.frame(
+      ID              = rownames(prediction),
+      predicted_line  = predicted_line,
+      predicted_value = top_value,
+      stringsAsFactors = FALSE
+    )
+
+    pred_results_long <- tibble::rownames_to_column(prediction, var = "ID")
+    pred_results_long <- tidyr::pivot_longer(
+      pred_results_long,
+      cols      = dplyr::all_of(columns_to_select),
+      names_to  = "category",
+      values_to = "percent"
+    )
+    pred_results_long$predicted_line <- id_order$predicted_line[match(pred_results_long$ID, id_order$ID)]
+
+    result_data(pred_results)
+    poly_items$pred_results      <- pred_results
+    poly_items$pred_results_long <- pred_results_long
+    poly_items$id_order          <- id_order
+  })
+
+  output$preview <- DT::renderDT({
+    req(poly_items$pred_results)
+    DT::datatable(poly_items$pred_results, options = list(pageLength = 10, scrollX = TRUE))
+  })
   
   #  Run estimation
   observeEvent(input$run, {
@@ -239,14 +310,40 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     output$status <- renderText("Running estimation...")
     
     tryCatch({
-      reference <- utils::read.table(input$reference_file$datapath, header = TRUE, sep = "\t")
-      reference <- dplyr::distinct(reference, ID, .keep_all = TRUE)
+      # .ped allele letters can only be coded consistently against another .ped,
+      #   and each .ped needs its .map so markers are matched by name
+      ref_is_ped <- genotype_upload_format(input$reference_file)  == "ped"
+      val_is_ped <- genotype_upload_format(input$validation_file) == "ped"
+      if (xor(ref_is_ped, val_is_ped)) {
+        stop("When using a PLINK .ped file, both the reference and validation genotypes must be .ped files.")
+      }
+      if (ref_is_ped && is.null(ped_maps$reference)) {
+        stop("Upload the .map file for the reference .ped.")
+      }
+      if (val_is_ped && is.null(ped_maps$validation)) {
+        stop("Upload the .map file for the validation .ped.")
+      }
+
+      reference      <- read_genotype_upload(input$reference_file, ploidy = input$ploidy, id_name = "ID",
+                                             map_input = ped_maps$reference)
+      counted_allele <- attr(reference, "counted_allele")   # NULL unless .ped
+      reference      <- dplyr::distinct(reference, ID, .keep_all = TRUE)
       reference <- tibble::column_to_rownames(reference, "ID")
       
       reference_ids <- utils::read.table(input$ref_ids_file$datapath, header = TRUE, sep = "\t")
       ref_ids       <- lapply(as.list(reference_ids), as.character)
       
-      validation_raw <- utils::read.table(input$validation_file$datapath, header = TRUE, sep = "\t")
+      # Validation .ped is coded with the reference's counted allele per marker
+      validation_raw <- read_genotype_upload(input$validation_file, ploidy = input$ploidy, id_name = "ID",
+                                             counted_allele = counted_allele,
+                                             map_input = ped_maps$validation)
+
+      # Markers are matched by name, so the two files must share some
+      shared_markers <- intersect(setdiff(names(reference), "ID"),
+                                  setdiff(names(validation_raw), "ID"))
+      if (length(shared_markers) == 0) {
+        stop("No marker names are shared between the reference and validation genotypes.")
+      }
       
       validation_markers  <- validation_raw[, colnames(validation_raw) != "ID", drop = FALSE]
       sample_call_rate    <- rowSums(!is.na(validation_markers)) / ncol(validation_markers)
@@ -315,40 +412,11 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       prediction <- as.data.frame(prediction, check.names = FALSE)
       prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
       prediction[] <- lapply(prediction, as.numeric)
-      
-      columns_to_select <- colnames(prediction)
-      predicted_line    <- columns_to_select[max.col(prediction[, columns_to_select, drop = FALSE], ties.method = "first")]
-      
-      pred_results <- tibble::rownames_to_column(prediction, var = "ID")
-      pred_results <- dplyr::mutate(pred_results, `Predicted line` = predicted_line)
-      pred_results <- dplyr::mutate(pred_results, dplyr::across(dplyr::all_of(columns_to_select), ~format_percent(.x)))
-      
-      result_data(pred_results)
-      
-      id_order <- data.frame(
-        ID              = rownames(prediction),
-        predicted_line  = predicted_line,
-        predicted_value = apply(prediction[, columns_to_select, drop = FALSE], 1, max, na.rm = TRUE),
-        stringsAsFactors = FALSE
-      )
-      
-      output$preview <- DT::renderDT({
-        DT::datatable(pred_results, options = list(pageLength = 10, scrollX = TRUE))
-      })
-      
-      pred_results_long <- tibble::rownames_to_column(prediction, var = "ID")
-      pred_results_long <- tidyr::pivot_longer(
-        pred_results_long,
-        cols      = dplyr::all_of(columns_to_select),
-        names_to  = "category",
-        values_to = "percent"
-      )
-      pred_results_long$predicted_line <- id_order$predicted_line[match(pred_results_long$ID, id_order$ID)]
-      
-      poly_items$pred_results      <- pred_results
-      poly_items$pred_results_long <- pred_results_long
-      poly_items$id_order          <- id_order
-      
+
+      # Line assignment is derived reactively from the stored proportions
+      #   (see "Line assignment" below), so the threshold applies without re-running
+      poly_items$prediction <- prediction
+
       final_status <- "Estimation complete. File ready for download."
       if (length(warning_messages) > 0) {
         final_status <- paste(final_status, "\n\n", paste(warning_messages, collapse = "\n\n"))
@@ -367,7 +435,9 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     dat <- poly_items$pred_results_long
     
     if (isTRUE(input$poly_sort_by_predicted)) {
-      ord    <- poly_items$id_order[order(poly_items$id_order$predicted_line, -poly_items$id_order$predicted_value), , drop = FALSE]
+      # Group by predicted line (Undetermined last), highest proportion first
+      io     <- poly_items$id_order
+      ord    <- io[order(io$predicted_line == "Undetermined", io$predicted_line, -io$predicted_value), , drop = FALSE]
       dat$ID <- factor(dat$ID, levels = ord$ID)
     } else {
       dat$ID <- factor(dat$ID, levels = unique(dat$ID))
