@@ -154,14 +154,18 @@ mod_polybreedtools_ui <- function(id) {
               sliderInput(ns("poly_image_res"),    "Resolution (DPI)", value = 300, min = 50,  max = 1000, step = 50),
               sliderInput(ns("poly_image_width"),  "Width (in)",       value = 10,  min = 3,   max = 30,   step = 0.5),
               sliderInput(ns("poly_image_height"), "Height (in)",      value = 5,   min = 3,   max = 20,   step = 0.5),
-              downloadButton(ns("download_poly_figure"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = icon("floppy-disk"),
+              status  = "info",
+              icon    = icon("sliders"),
               width   = "300px",
-              label   = "Save Plot",
-              tooltip = tooltipOptions(title = "Click to see options!")
+              label   = "Image Options",
+              tooltip = tooltipOptions(title = "File type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            downloadButton(ns("download_poly_figure"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -508,13 +512,11 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       width  <- as.numeric(input$poly_image_width  %||% 10)
       height <- as.numeric(input$poly_image_height %||% 5)
       dpi    <- as.numeric(input$poly_image_res    %||% 300)
-      if (ext %in% c("png", "jpeg")) {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-      } else {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-      }
+      save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
     }
   )
+  # The button sits in a dropdown hidden at start-up; keep its link active
+  shiny::outputOptions(output, "download_poly_figure", suspendWhenHidden = FALSE)
   
   #  Example tables
   example_ids_df <- data.frame(

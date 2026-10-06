@@ -52,23 +52,99 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
   }
 
   if (format == "vcf") {
-    geno <- as.data.frame(
-      BIGpopA::vcf_to_dosage(file_input$datapath, ploidy = as.integer(ploidy), verbose = FALSE),
-      check.names = FALSE
-    )
+    # Infer the ploidy from the GT calls and stop if it differs from the selection
+    vcf <- BIGpopA::vcf_to_dosage(file_input$datapath, ploidy = NULL, verbose = FALSE)
+    check_vcf_ploidy(attr(vcf, "ploidy"), ploidy)
+    geno <- as.data.frame(vcf, check.names = FALSE)
     names(geno)[names(geno) == "id"] <- id_name
     return(geno)
   }
   if (grepl("\\.gz$", name)) {
     stop("Compressed genotype files must be VCFs (.vcf.gz).")
   }
-  if (tools::file_ext(name) == "csv") {
-    return(utils::read.csv(file_input$datapath, header = TRUE,
-                           stringsAsFactors = FALSE, check.names = FALSE))
+  geno <- if (tools::file_ext(name) == "csv") {
+    utils::read.csv(file_input$datapath, header = TRUE,
+                    stringsAsFactors = FALSE, check.names = FALSE)
+  } else {
+    utils::read.table(file_input$datapath, header = TRUE, sep = "\t",
+                      stringsAsFactors = FALSE, check.names = FALSE,
+                      comment.char = "", quote = "")
   }
-  utils::read.table(file_input$datapath, header = TRUE, sep = "\t",
-                    stringsAsFactors = FALSE, check.names = FALSE,
-                    comment.char = "", quote = "")
+
+  # ID column name is not case sensitive (id, ID, Id): rename it to id_name
+  if (!id_name %in% names(geno)) {
+    hit <- which(tolower(trimws(names(geno))) == "id")
+    if (length(hit) >= 1) names(geno)[hit[1]] <- id_name
+  }
+  geno
+}
+
+#' Describe a ploidy level for messages, e.g. "tetraploid (ploidy 4)"
+#' @noRd
+ploidy_label <- function(p) {
+  lbl <- c(`2` = "diploid", `3` = "triploid", `4` = "tetraploid",
+           `5` = "pentaploid", `6` = "hexaploid", `8` = "octoploid")
+  key <- as.character(p)
+  if (key %in% names(lbl)) paste0(lbl[[key]], " (ploidy ", p, ")") else paste("ploidy", p)
+}
+
+#' Most common ploidy (allele slots per call) in a VCF GT matrix
+#' @noRd
+gt_ploidy <- function(gt) {
+  calls <- as.vector(gt)
+  calls <- calls[!is.na(calls) & nzchar(calls)]
+  if (length(calls) == 0) return(NA_integer_)
+  slots <- lengths(strsplit(calls, "[/|]"))
+  as.integer(names(which.max(table(slots))))
+}
+
+#' Stop when the selected ploidy differs from the VCF's most common ploidy
+#'
+#' @param vcf_ploidy Ploidy observed in the VCF (most common call length).
+#' @param ploidy Ploidy selected in the app.
+#' @noRd
+check_vcf_ploidy <- function(vcf_ploidy, ploidy) {
+  if (length(vcf_ploidy) == 1 && !is.na(vcf_ploidy) && as.integer(ploidy) != vcf_ploidy) {
+    stop("The VCF looks ", ploidy_label(vcf_ploidy), ": most genotype calls have ",
+         vcf_ploidy, " alleles, but Ploidy is set to ", ploidy,
+         ". Set Ploidy to ", vcf_ploidy, " and run again.", call. = FALSE)
+  }
+  invisible(TRUE)
+}
+
+#' Save a ggplot for a "Save Image" download button
+#'
+#' Shared by every module's figure download. The graphics device is set from
+#' the chosen file type instead of guessed from the temporary file name, and
+#' svg uses 'svglite' when installed or the built-in grDevices::svg otherwise.
+#' Errors are shown to the user as a notification instead of failing silently.
+#'
+#' @param plot ggplot object.
+#' @param file Path supplied by shiny::downloadHandler().
+#' @param ext File type: "png", "jpeg", "tiff", "pdf" or "svg".
+#' @param width,height Size in inches.
+#' @param dpi Resolution for raster formats.
+#' @noRd
+save_plot_file <- function(plot, file, ext, width = 8, height = 5, dpi = 300) {
+  device <- switch(
+    ext,
+    png  = "png",
+    jpeg = "jpeg",
+    tiff = "tiff",
+    pdf  = "pdf",
+    svg  = if (requireNamespace("svglite", quietly = TRUE)) "svg" else grDevices::svg,
+    stop("Unsupported image type: ", ext)
+  )
+  tryCatch(
+    ggplot2::ggsave(filename = file, plot = plot, device = device,
+                    width = width, height = height, units = "in", dpi = dpi),
+    error = function(e) {
+      shiny::showNotification(paste("Could not save the image:", conditionMessage(e)),
+                              type = "error", duration = 10)
+      stop(e)
+    }
+  )
+  invisible(file)
 }
 
 #' Convert GT format to numeric dosage

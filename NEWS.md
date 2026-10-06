@@ -17,6 +17,12 @@
 * Updated the in-app Instructions and Help panels for the new input formats.
 * Column names `id`, `male_parent`, `female_parent` and `sex` in uploaded files
   are no longer case sensitive (e.g. `ID`, `Male_Parent` are accepted).
+* VCF uploads (all modules, including SNMF) now stop with a clear message when
+  the selected Ploidy differs from the most common ploidy in the file, and
+  suggest the ploidy to use (e.g. "The VCF looks tetraploid (ploidy 4) ...
+  Set Ploidy to 4 and run again.").
+* Fixed "Save Image" downloads: the file type is set explicitly, svg export works
+  without the 'svglite' package, and saving errors are shown in the app.
 * Requires 'BIGpopA' (>= 2.1.0).
 
 # Familia 2.0.0

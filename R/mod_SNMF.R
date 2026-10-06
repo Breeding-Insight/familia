@@ -178,14 +178,18 @@ mod_SNMF_ui <- function(id) {
               shiny::sliderInput(ns("snmf_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
               shiny::sliderInput(ns("snmf_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
               shiny::sliderInput(ns("snmf_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              shiny::downloadButton(ns("download_snmf_figure"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = shiny::icon("floppy-disk"),
+              status  = "info",
+              icon    = shiny::icon("sliders"),
               width   = "300px",
-              label   = "Save Plot",
-              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
+              label   = "Image Options",
+              tooltip = shinyWidgets::tooltipOptions(title = "Figure, file type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          shiny::div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            shiny::downloadButton(ns("download_snmf_figure"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -277,12 +281,13 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     to
   }
   
-  write_vcf_upload_as_geno <- function(vcf_path, geno_path) {
+  write_vcf_upload_as_geno <- function(vcf_path, geno_path, ploidy) {
     vcf <- vcfR::read.vcfR(vcf_path, verbose = FALSE)
     gt  <- as.matrix(vcfR::extract.gt(vcf, element = "GT"))
     if (nrow(gt) == 0 || ncol(gt) == 0) {
       stop("No genotype calls were found in the uploaded VCF.", call. = FALSE)
     }
+    check_vcf_ploidy(gt_ploidy(gt), ploidy)   # stop if Ploidy does not match the VCF
     dosage_cols <- lapply(seq_len(ncol(gt)), function(i) convert_to_dosage(gt[, i]))
     dosage_mat  <- do.call(cbind, dosage_cols)
     colnames(dosage_mat) <- colnames(gt)
@@ -617,7 +622,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 15, title = "Converting VCF \u2192 GENO")
       set_status("Converting VCF to GENO...\n")
       vcf_to_geno_res <- tryCatch(
-        write_vcf_upload_as_geno(uploaded_path, geno_path),
+        write_vcf_upload_as_geno(uploaded_path, geno_path, ploidy),
         error = function(e) e
       )
       if (!file.exists(geno_path)) {
@@ -792,13 +797,11 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       dpi    <- as.numeric(input$snmf_image_res    %||% 300)
       fig    <- input$snmf_figure %||% "Ancestry Plot"
       p <- if (fig == "Cross-Entropy Plot") ce_plot() else ancestry_plot()
-      if (ext %in% c("png", "jpeg", "tiff")) {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-      } else {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-      }
+      save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
     }
   )
+  # The button sits in a dropdown hidden at start-up; keep its link active
+  shiny::outputOptions(output, "download_snmf_figure", suspendWhenHidden = FALSE)
   
   session$onSessionEnded(function() {
     cleanup_run_dir()

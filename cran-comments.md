@@ -18,6 +18,8 @@ provides the VCF and 'PLINK' .ped conversion used by the new upload options.
 * SNMF: results use the lowest cross-entropy run by default; the manual run
   selector moved to an "Advanced Options" dialog.
 * Updated in-app help for the new options.
+* Fixed plot image downloads; 'svglite' is now in Suggests and used for svg
+  export when available.
 
 # Familia 2.0.0
 * Added a Ploidy selector to the Find Parentage and Validate Pedigree tabs,

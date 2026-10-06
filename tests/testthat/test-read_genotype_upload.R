@@ -26,6 +26,12 @@ test_that("tab-separated and CSV text files are read as-is", {
   }
 })
 
+test_that("the ID column of a text file is matched ignoring case", {
+  up   <- fake_upload(c("id\tS1", "A\t0", "B\t2"), "ref.txt")
+  geno <- read_genotype_upload(up, ploidy = 2, id_name = "ID")
+  expect_identical(names(geno), c("ID", "S1"))
+})
+
 test_that("a VCF upload is converted to dosages with the requested ID column", {
   vcf <- fake_upload(c(
     "##fileformat=VCFv4.3",
@@ -40,6 +46,23 @@ test_that("a VCF upload is converted to dosages with the requested ID column", {
   expect_identical(names(geno), c("ID", "snp1", "snp2"))
   expect_equal(as.numeric(geno$snp1), c(0, 1))
   expect_equal(as.numeric(geno$snp2), c(2, NA))
+})
+
+test_that("a VCF whose ploidy differs from the selection gives the suggested ploidy", {
+  vcf <- fake_upload(c(
+    "##fileformat=VCFv4.3",
+    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
+    paste("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO",
+          "FORMAT", "A", "B", sep = "\t"),
+    paste("chr1", "100", "snp1", "A", "T", ".", ".", ".", "GT", "0/0/0/1", "0/1/1/1", sep = "\t")
+  ), "tetra.vcf")
+  expect_error(read_genotype_upload(vcf, ploidy = 2), "tetraploid \\(ploidy 4\\).*Set Ploidy to 4")
+  expect_silent(read_genotype_upload(vcf, ploidy = 4))
+})
+
+test_that("gt_ploidy finds the most common call length", {
+  expect_identical(gt_ploidy(c("0/1", "1/1", "0/0/0/1", "./.")), 2L)
+  expect_identical(gt_ploidy(c("0|1|1|1", "0/0/0/0")),            4L)
 })
 
 test_that("a .ped upload uses the .map names and keeps the counted alleles", {
