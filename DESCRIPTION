@@ -1,6 +1,6 @@
 Package: Familia
 Title: 'shiny' Application for Population Structure and Ancestry Assessments
-Version: 2.0.0
+Version: 2.1.0
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
@@ -18,7 +18,8 @@ Description: Provides a 'shiny' web application developed by the Breeding Insigh
             command-line tools. Pedigree validation, Mendelian error analysis and
             parentage assignment build on the 'BIGpopA' package
             (<https://CRAN.R-project.org/package=BIGpopA>) and support diploid and
-            polyploid data. Ancestry estimation uses
+            polyploid data. Genotypes can be uploaded as dosage tables, VCF files,
+            or 'PLINK' .ped files. Ancestry estimation uses
             the sparse non-negative matrix
             factorization method of Frichot et al. (2014) <doi:10.1534/genetics.113.160572>
             as implemented in the 'LEA' package by Frichot and Francois (2015)
@@ -34,7 +35,7 @@ Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.4.0)
 biocViews:
 Imports:
-    BIGpopA (>= 2.0.0),
+    BIGpopA (>= 2.1.0),
     bs4Dash,
     config,
     curl,
@@ -59,6 +60,7 @@ Imports:
 Suggests:
     LEA,
     spelling,
+    svglite,
     testthat
 Language: en-US
-Config/roxygen2/version: 8.0.0
+Config/roxygen2/version: 8.1.0

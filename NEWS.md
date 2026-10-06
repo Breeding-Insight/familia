@@ -1,3 +1,30 @@
+# Familia 2.1.0
+
+* Find Parentage, Validate Pedigree and PolyBreedTools now accept genotypes as
+  text files (.txt/.csv), VCF files (.vcf/.vcf.gz), or 'PLINK' .ped files, in
+  addition to the previous tab-separated format. VCF calls are converted to
+  allele-B dosages using the selected Ploidy; .ped files are diploid only.
+* PolyBreedTools: a .map upload appears for each .ped genotype file so markers
+  are matched by name. If either genotype file is a .ped, both must be; the
+  validation .ped is coded with the reference panel's counted allele per marker.
+* PolyBreedTools: new **Assignment threshold (%)** input. Samples whose highest
+  line proportion is below the threshold are labelled "Undetermined". Changes
+  apply without re-running the estimation. Default 0 keeps the previous behavior.
+* SNMF: the plot, Q matrix and downloads use the best (lowest cross-entropy)
+  run for the selected K by default. The manual run selector moved to an
+  **Advanced Options** dialog for diagnostics; changing K or re-running resets
+  to the best run. The Help panel now explains run selection.
+* Updated the in-app Instructions and Help panels for the new input formats.
+* Column names `id`, `male_parent`, `female_parent` and `sex` in uploaded files
+  are no longer case sensitive (e.g. `ID`, `Male_Parent` are accepted).
+* VCF uploads (all modules, including SNMF) now stop with a clear message when
+  the selected Ploidy differs from the most common ploidy in the file, and
+  suggest the ploidy to use (e.g. "The VCF looks tetraploid (ploidy 4) ...
+  Set Ploidy to 4 and run again.").
+* Fixed "Save Image" downloads: the file type is set explicitly, svg export works
+  without the 'svglite' package, and saving errors are shown in the app.
+* Requires 'BIGpopA' (>= 2.1.0).
+
 # Familia 2.0.0
 
 * Added a **Ploidy** selector to the Find Parentage and Validate Pedigree tabs,

@@ -1,14 +1,25 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 0 notes
 
 * This is an update to a package already on CRAN.
 
 ## Dependencies
 
-This version requires 'BIGpopA' (>= 2.0.0) for its new ploidy features.
-'BIGpopA' 2.0.0 has been submitted to CRAN; please process it first (or
-alongside this submission) so the dependency resolves.
+This version requires 'BIGpopA' (>= 2.1.0), which is available on CRAN and
+provides the VCF and 'PLINK' .ped conversion used by the new upload options.
+
+# Familia 2.1.0
+* Find Parentage, Validate Pedigree and PolyBreedTools now accept genotypes as
+  text files, VCF files, or 'PLINK' .ped files (with .map files in
+  PolyBreedTools).
+* PolyBreedTools: added an assignment threshold; samples below it are
+  labelled "Undetermined".
+* SNMF: results use the lowest cross-entropy run by default; the manual run
+  selector moved to an "Advanced Options" dialog.
+* Updated in-app help for the new options.
+* Fixed plot image downloads; 'svglite' is now in Suggests and used for svg
+  export when available.
 
 # Familia 2.0.0
 * Added a Ploidy selector to the Find Parentage and Validate Pedigree tabs,

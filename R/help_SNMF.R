@@ -96,8 +96,10 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         "<strong>Set K range</strong> - define the minimum and maximum number of ancestry clusters to test."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Set Repetitions</strong> - number of independent runs per K value. More repetitions
-         improve reliability but increase runtime."
+        "<strong>Set Repetitions</strong> - number of independent runs per K value. sNMF is
+         stochastic, so each run can converge to a different solution. More repetitions
+         improve reliability but increase runtime. When cross-entropy is enabled, the run
+         with the lowest cross-entropy is automatically used for each K (see Run Selection below)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Choose Selection Mode</strong> - controls how the best K and run are determined
@@ -128,7 +130,8 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
         shiny::p(
           "Cross-entropy is computed for every K and repetition. The K with the lowest
            minimum cross-entropy is automatically selected as the best K, and the run
-           with the lowest cross-entropy for that K is pre-selected.",
+           with the lowest cross-entropy for that K is automatically used for the plot,
+           table and downloads.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example cross-entropy summary:"),
@@ -150,8 +153,8 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "Cross-entropy is still computed and displayed for all K values and runs, but you
-           manually choose the K and run to visualise using the Plot Controls selectors.
-           The best run per K is pre-selected as a convenience.",
+           manually choose the K to visualise using the Selected K control in Plot Controls.
+           The best (lowest cross-entropy) run for the chosen K is used automatically.",
           style = "margin-bottom: 6px;"
         ),
         shiny::p(
@@ -168,8 +171,9 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "Cross-entropy is disabled entirely, which can reduce runtime. No cross-entropy
-           plot or table will be produced. You select the K and run to display manually
-           via the Plot Controls selectors.",
+           plot or table will be produced. You select the K to display via the Selected K
+           control. Because there is no cross-entropy to rank runs, Run 1 is shown by
+           default; use Advanced Options to view other runs.",
           style = "margin-bottom: 6px;"
         ),
         shiny::p(
@@ -179,7 +183,46 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       )
     ),
     shiny::hr(style = "margin: 8px 0;"),
-    
+
+    # -- Run Selection ------------------------------------------------
+    shiny::h6(
+      shiny::tagList(shiny::icon("layer-group"), " Run Selection"),
+      style = "font-weight: bold;"
+    ),
+    shiny::p(
+      "Each repetition is an independent sNMF optimisation and may converge to a different
+       local solution. Runs are not averaged, because cluster labels are not consistent
+       across runs (Cluster 1 in one run may correspond to Cluster 2 in another) and
+       averaging would mix solutions of different quality.",
+      style = "font-size: 13px;"
+    ),
+    shiny::p(
+      "Instead, for the selected K the app automatically uses the run with the lowest
+       cross-entropy, which is the best-fitting solution. This run drives the Ancestry
+       Plot, Q Matrix and downloads. Changing K or re-running SNMF always returns to the
+       automatically selected best run.",
+      style = "font-size: 13px;"
+    ),
+    collapse_fn(
+      panel_id     = pid("snmf_help_advanced_run"),
+      icon_name    = "cog",
+      label        = "Advanced Options (run override)",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Click Advanced Options in Plot Controls to override the automatically selected
+           run and display any individual repetition. Choose Auto (best cross-entropy) or
+           Reset to best to return to the default.",
+          style = "margin-bottom: 6px;"
+        ),
+        shiny::p(
+          "Intended for diagnostics, e.g. checking whether different runs converge to
+           similar ancestry patterns. Most users do not need to change this.",
+          style = "color: #6c757d; font-size: 11px; margin: 0;"
+        )
+      )
+    ),
+    shiny::hr(style = "margin: 8px 0;"),
+
     # -- Parameter Reference ------------------------------------------
     shiny::h6(
       shiny::tagList(shiny::icon("gear"), " Parameter Reference"),
@@ -259,6 +302,16 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::p("Click each control to see what it does.",
              style = "color: #6c757d; font-size: 12px; margin-bottom: 8px;"),
     collapse_fn(
+      panel_id     = pid("snmf_help_selected_k"),
+      icon_name    = "layer-group",
+      label        = "Selected K",
+      body_content = shiny::p(
+        "Chooses which K to display. Defaults to the best K when cross-entropy is enabled.
+         The best run for the chosen K is used automatically (see Run Selection).",
+        style = "margin: 0;"
+      )
+    ),
+    collapse_fn(
       panel_id     = pid("snmf_help_color_palette"),
       icon_name    = "palette",
       label        = "Color Palette",
@@ -315,8 +368,9 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ul(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<code>Download Q (CSV)</code> - Q-matrix for the currently selected K and run,
-         with sample IDs and one column per cluster."
+        "<code>Download Q (CSV)</code> - Q-matrix for the selected K and the run in use
+         (best cross-entropy run by default, or the Advanced Options override), with sample
+         IDs and one column per cluster. The file name includes the K and run number."
       )),
       shiny::tags$li(shiny::HTML(
         "<code>Download cross-entropy (CSV)</code> - full cross-entropy table across all

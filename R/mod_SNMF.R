@@ -178,14 +178,18 @@ mod_SNMF_ui <- function(id) {
               shiny::sliderInput(ns("snmf_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
               shiny::sliderInput(ns("snmf_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
               shiny::sliderInput(ns("snmf_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              shiny::downloadButton(ns("download_snmf_figure"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = shiny::icon("floppy-disk"),
+              status  = "info",
+              icon    = shiny::icon("sliders"),
               width   = "300px",
-              label   = "Save Plot",
-              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
+              label   = "Image Options",
+              tooltip = shinyWidgets::tooltipOptions(title = "Figure, file type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          shiny::div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            shiny::downloadButton(ns("download_snmf_figure"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -277,12 +281,13 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     to
   }
   
-  write_vcf_upload_as_geno <- function(vcf_path, geno_path) {
+  write_vcf_upload_as_geno <- function(vcf_path, geno_path, ploidy) {
     vcf <- vcfR::read.vcfR(vcf_path, verbose = FALSE)
     gt  <- as.matrix(vcfR::extract.gt(vcf, element = "GT"))
     if (nrow(gt) == 0 || ncol(gt) == 0) {
       stop("No genotype calls were found in the uploaded VCF.", call. = FALSE)
     }
+    check_vcf_ploidy(gt_ploidy(gt), ploidy)   # stop if Ploidy does not match the VCF
     dosage_cols <- lapply(seq_len(ncol(gt)), function(i) convert_to_dosage(gt[, i]))
     dosage_mat  <- do.call(cbind, dosage_cols)
     colnames(dosage_mat) <- colnames(gt)
@@ -316,7 +321,8 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     ce_summary      = NULL,
     best_k          = NULL,
     best_run_by_k   = NULL,
-    sample_ids      = NULL
+    sample_ids      = NULL,
+    run_override    = NA_integer_   # NA = auto (best cross-entropy run); integer = manual override
   )
   
   #  Value boxes
@@ -347,7 +353,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   #  Selectors UI
   output$snmf_selectors_ui <- shiny::renderUI({
     if (is.null(state$project) || is.null(state$k_values) || is.null(state$repetitions)) {
-      return(shiny::HTML("<em>Run SNMF to enable K/run selectors and downloads.</em>"))
+      return(shiny::HTML("<em>Run SNMF to enable the K selector and downloads.</em>"))
     }
     shiny::tagList(
       shiny::selectInput(
@@ -356,27 +362,29 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
         choices  = as.character(state$k_values),
         selected = as.character(state$best_k %||% state$k_values[[1]])
       ),
-      shiny::selectInput(
-        ns("snmf_selected_run"),
-        "Selected run",
-        choices  = as.character(seq_len(state$repetitions)),
-        selected = "1"
+      shiny::helpText(
+        style = "font-size: 12px; margin-top: -5px;",
+        "Plot and downloads use the best (lowest cross-entropy) run for this K by default."
+      ),
+      shiny::div(
+        style = "text-align: left; margin-top: 5px;",
+        shiny::actionButton(
+          ns("snmf_advanced_run"),
+          label = shiny::HTML(paste(
+            shiny::icon("cog", style = "color: #007bff;"),
+            "Advanced Options"
+          )),
+          style = "background-color: transparent; border: none; color: #007bff; font-size: smaller; text-decoration: underline; padding: 0;"
+        )
       )
     )
   })
   
+  # Changing K clears any manual run override so the plot falls back to the
+  # best (lowest cross-entropy) run for the newly selected K.
   shiny::observeEvent(input$snmf_selected_k, {
-    req(state$project, state$k_values, state$repetitions)
-    k            <- as.integer(input$snmf_selected_k)
-    selected_run <- 1L
-    if (!is.null(state$best_run_by_k) && !is.na(state$best_run_by_k[as.character(k)])) {
-      selected_run <- as.integer(state$best_run_by_k[as.character(k)])
-    }
-    shiny::updateSelectInput(
-      session, "snmf_selected_run",
-      choices  = as.character(seq_len(state$repetitions)),
-      selected = as.character(selected_run)
-    )
+    req(state$project)
+    state$run_override <- NA_integer_
   }, ignoreInit = TRUE)
   
   selected_k <- shiny::reactive({
@@ -388,9 +396,66 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   
   selected_run <- shiny::reactive({
     req(state$project, state$repetitions)
-    r <- input$snmf_selected_run
-    if (is.null(r) || !nzchar(r)) return(1L)
-    as.integer(r)
+    ovr <- state$run_override
+    if (!is.null(ovr) && !is.na(ovr)) return(as.integer(ovr))
+    # Auto: best (lowest cross-entropy) run for the selected K.
+    k <- selected_k()
+    if (!is.null(state$best_run_by_k) && !is.na(state$best_run_by_k[as.character(k)])) {
+      return(as.integer(state$best_run_by_k[as.character(k)]))
+    }
+    1L
+  })
+
+  #  Advanced Options: manual run override (defaults to best-CE run).
+  #  Follows the BIGapp "Advanced Options" convention: a link-styled button
+  #  opens a modal; the choice is stored in state$run_override.
+  shiny::observeEvent(input$snmf_advanced_run, {
+    req(state$project, state$repetitions)
+    k        <- selected_k()
+    auto_run <- if (!is.null(state$best_run_by_k) && !is.na(state$best_run_by_k[as.character(k)])) {
+      as.integer(state$best_run_by_k[as.character(k)])
+    } else {
+      1L
+    }
+    cur <- if (!is.null(state$run_override) && !is.na(state$run_override)) {
+      as.character(as.integer(state$run_override))
+    } else {
+      "auto"
+    }
+    shiny::showModal(shiny::modalDialog(
+      title     = "Advanced Options",
+      size      = "m",
+      easyClose = TRUE,
+      shiny::HTML(paste0(
+        "<p style='font-size:13px;'>By default the ancestry plot and downloads use the run with the ",
+        "<b>lowest cross-entropy</b> for the selected K (currently run ", auto_run,
+        " for K = ", k, "). Override this only to inspect how other repetitions converged.</p>"
+      )),
+      shiny::selectInput(
+        ns("snmf_run_override"),
+        "Run (override)",
+        choices  = c(
+          "Auto (best cross-entropy)" = "auto",
+          stats::setNames(as.character(seq_len(state$repetitions)),
+                          paste("Run", seq_len(state$repetitions)))
+        ),
+        selected = cur
+      ),
+      footer = shiny::tagList(
+        shiny::actionButton(ns("snmf_reset_run_override"), "Reset to best"),
+        shiny::modalButton("Done")
+      )
+    ))
+  })
+
+  shiny::observeEvent(input$snmf_run_override, {
+    v <- input$snmf_run_override
+    state$run_override <- if (is.null(v) || identical(v, "auto")) NA_integer_ else as.integer(v)
+  }, ignoreInit = TRUE)
+
+  shiny::observeEvent(input$snmf_reset_run_override, {
+    state$run_override <- NA_integer_
+    shiny::updateSelectInput(session, "snmf_run_override", selected = "auto")
   })
   
   #  Q matrix reactive
@@ -539,7 +604,8 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
     state$best_k          <- NULL
     state$best_run_by_k   <- NULL
     state$sample_ids      <- NULL
-    
+    state$run_override    <- NA_integer_
+
     shinyjs::disable("download_snmf_all")
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 5,  title = "Preparing input")
     set_status("Preparing input...\n")
@@ -556,7 +622,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 15, title = "Converting VCF \u2192 GENO")
       set_status("Converting VCF to GENO...\n")
       vcf_to_geno_res <- tryCatch(
-        write_vcf_upload_as_geno(uploaded_path, geno_path),
+        write_vcf_upload_as_geno(uploaded_path, geno_path, ploidy),
         error = function(e) e
       )
       if (!file.exists(geno_path)) {
@@ -673,16 +739,8 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       choices  = as.character(state$k_values),
       selected = as.character(state$best_k %||% state$k_values[[1]])
     )
-    initial_run <- 1L
-    if (!is.null(state$best_run_by_k)) {
-      br <- state$best_run_by_k[as.character(state$best_k)]
-      if (!is.na(br)) initial_run <- as.integer(br)
-    }
-    shiny::updateSelectInput(
-      session, "snmf_selected_run",
-      choices  = as.character(seq_len(reps)),
-      selected = as.character(initial_run)
-    )
+    # Run defaults to the best (lowest cross-entropy) run via state$run_override = NA.
+    state$run_override <- NA_integer_
     
     shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 100, title = "Complete!")
     set_status("SNMF complete.\n")
@@ -739,13 +797,11 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       dpi    <- as.numeric(input$snmf_image_res    %||% 300)
       fig    <- input$snmf_figure %||% "Ancestry Plot"
       p <- if (fig == "Cross-Entropy Plot") ce_plot() else ancestry_plot()
-      if (ext %in% c("png", "jpeg", "tiff")) {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-      } else {
-        ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-      }
+      save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
     }
   )
+  # The button sits in a dropdown hidden at start-up; keep its link active
+  shiny::outputOptions(output, "download_snmf_figure", suspendWhenHidden = FALSE)
   
   session$onSessionEnded(function() {
     cleanup_run_dir()

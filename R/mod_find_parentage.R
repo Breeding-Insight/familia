@@ -23,7 +23,7 @@ mod_find_parentage_ui <- function(id) {
             "Upload genotype, parents, and progeny files to assign parentage.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
-          shiny::fileInput(ns("genotypes_file"), "Genotypes File", accept = c(".txt", ".tsv", ".csv")),
+          shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           shiny::fileInput(ns("parents_file"),   "Parents File",   accept = c(".txt", ".tsv", ".csv")),
           shiny::fileInput(ns("progeny_file"),   "Progeny File",   accept = c(".txt", ".tsv", ".csv")),
           shiny::hr(),
@@ -80,7 +80,7 @@ mod_find_parentage_ui <- function(id) {
               shiny::fluidRow(
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
+                    <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Upload a parents file with an <code>id</code> column and an optional <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>).</li>
                     <li>Upload a progeny file with an <code>id</code> column.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
@@ -153,14 +153,18 @@ mod_find_parentage_ui <- function(id) {
               shiny::sliderInput(ns("plot_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
               shiny::sliderInput(ns("plot_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
               shiny::sliderInput(ns("plot_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              shiny::downloadButton(ns("download_parentage_plot"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = shiny::icon("floppy-disk"),
+              status  = "info",
+              icon    = shiny::icon("sliders"),
               width   = "300px",
-              label   = "Save",
-              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
+              label   = "Image Options",
+              tooltip = shinyWidgets::tooltipOptions(title = "File type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          shiny::div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            shiny::downloadButton(ns("download_parentage_plot"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -249,7 +253,7 @@ mod_find_parentage_server <- function(id, parent_session) {
           }
         }
         
-        geno_raw    <- read_flex_ui(input$genotypes_file)
+        geno_raw    <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
         parents_raw <- read_flex_ui(input$parents_file)
         progeny_raw <- read_flex_ui(input$progeny_file)
         
@@ -411,13 +415,11 @@ mod_find_parentage_server <- function(id, parent_session) {
         width  <- as.numeric(input$plot_image_width  %||% 8)
         height <- as.numeric(input$plot_image_height %||% 5)
         dpi    <- as.numeric(input$plot_image_res    %||% 300)
-        if (ext %in% c("png", "jpeg", "tiff")) {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-        } else {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-        }
+        save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
       }
     )
+    # The button sits in a dropdown hidden at start-up; keep its link active
+    shiny::outputOptions(output, "download_parentage_plot", suspendWhenHidden = FALSE)
     
     # Unified data download
     output$download_parentage_all <- shiny::downloadHandler(
