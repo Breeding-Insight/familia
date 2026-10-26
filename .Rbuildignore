@@ -11,11 +11,14 @@
 ^app$
 ^app\.R$
 ^dev$
+^data-raw$
 ^\.RData$
 ^\.Rhistory$
 ^.*\.DS_Store$
-^inst/snmf_example\.vcf$
+^Rplots\.pdf$
 ^cran-comments\.md$
 ^CRAN-SUBMISSION$
 ^\.gitignore$
-^inst/\.gitignore$
+^docs$
+^doc$
+^Meta$

@@ -8,7 +8,6 @@
 #'
 #' @importFrom shiny NS tagList
 #' @import shinydisconnect
-#' @importFrom bs4Dash valueBoxOutput
 mod_polybreedtools_ui <- function(id) {
   ns <- NS(id)
   tagList(
@@ -25,13 +24,14 @@ mod_polybreedtools_ui <- function(id) {
           collapsed   = FALSE,
           status      = "info",
           solidHeader = TRUE,
+          example_files_ui(ns, example_files$polybreedtools),
           fileInput(ns("reference_file"), "Reference Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)",  accept = genotype_upload_accept),
           uiOutput(ns("reference_map_ui")),    # shown only for a .ped reference
           fileInput(ns("ref_ids_file"),   "Reference IDs",                                          accept = ".txt"),
           fileInput(ns("validation_file"),"Validation Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           uiOutput(ns("validation_map_ui")),   # shown only for a .ped validation file
           numericInput(ns("ploidy"), "Ploidy", value = 2, min = 1, max = 20, step = 1),
-          numericInput(ns("assign_threshold"), "Assignment threshold (%)", value = 0, min = 0, max = 100, step = 1),
+          numericInput(ns("assign_threshold"), "Assignment threshold (%)", value = 50, min = 0, max = 100, step = 1),
           actionButton(ns("run"), "Run Estimation"),
           shiny::hr(),
           shinyjs::disabled(
@@ -72,11 +72,12 @@ mod_polybreedtools_ui <- function(id) {
                       <a href="https://www.animalsciencepublications.org/publications/tas/articles/1/1/36" target="_blank">Funkhouser et al. (2017)</a>.</li>
                     <li><strong>Input format:</strong></li>
                     <ul>
-                      <li><strong>Reference Genotypes:</strong> Either a genotype matrix (.txt tab-separated or .csv) with samples in rows and SNP markers in columns, where the first column must be <code>ID</code> containing sample IDs and missing values are coded as <code>NA</code>; a VCF file (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to allele-B dosages using the selected ploidy; or a PLINK <code>.ped</code> file (diploid only) together with its <code>.map</code> file, which supplies the marker names.</li>
-                      <li><strong>Assignment threshold (%):</strong> A sample is assigned to its highest-proportion line only if that proportion meets the threshold; otherwise it is labelled <code>Undetermined</code>. Use 0 to always assign the highest line. Changes apply immediately without re-running.</li>
+                      <li><strong>Reference Genotypes:</strong> Either a genotype matrix (.txt tab-separated or .csv) with samples in rows and SNP markers in columns, with an <code>ID</code> column holding the sample IDs (the name is not case sensitive, so <code>id</code> also works) and missing values coded as <code>NA</code>; a VCF file (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to allele-B dosages using the selected ploidy; or a PLINK <code>.ped</code> file (diploid only) together with its <code>.map</code> file, which supplies the marker names.</li>
+                      <li><strong>Assignment threshold (%):</strong> A sample is assigned to its highest-proportion line only if that proportion meets the threshold; otherwise it is labelled <code>Undetermined</code>. The default is 50. Use 0 to always assign the highest line. Changes apply immediately without re-running.</li>
                       <li><strong>Reference IDs:</strong> A .txt file with one column per population, listing the reference sample IDs. Header example: <code>Group1</code>, <code>Group2</code>.</li>
                       <li><strong>Validation Genotypes:</strong> Same formats as the reference genotype file. Reference and validation files do not need to be the same format, but marker names must match. The exception is <code>.ped</code>: if either file is a <code>.ped</code>, both must be <code>.ped</code> files, each uploaded with its <code>.map</code>. Markers are matched by the names in the <code>.map</code> files, so their order does not need to match.</li>
                     </ul>
+                    <li><strong>Results Table:</strong> the estimated percentage of each line, the <code>Predicted line</code> and <code>R2</code>. R2 is how well the estimated mix of lines explains the sample (squared correlation between its dosages divided by the ploidy and the line frequencies weighted by its proportions). It is usually well below 1, so compare it between samples: a much lower R2 than the rest suggests a line missing from the reference panel or poor-quality genotypes.</li>
                   </ul>
                 ')))
               ),
@@ -175,10 +176,8 @@ mod_polybreedtools_ui <- function(id) {
 
 #' PolyBreedTools Server Functions
 #'
-#' @importFrom graphics axis hist points
 #' @import ggplot2
 #' @import RColorBrewer
-#' @importFrom scales comma_format
 #' @import openxlsx
 #' @import BIGpopA
 #'
@@ -255,6 +254,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
   result_data <- reactiveVal(NULL)
   poly_items  <- reactiveValues(
     prediction        = NULL,   # numeric proportions, samples in rows
+    r2                = NULL,   # model fit per sample, named by sample ID
     pred_results      = NULL,
     pred_results_long = NULL,
     id_order          = NULL
@@ -279,6 +279,9 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
     pred_results <- tibble::rownames_to_column(prediction, var = "ID")
     pred_results <- dplyr::mutate(pred_results, `Predicted line` = predicted_line)
     pred_results <- dplyr::mutate(pred_results, dplyr::across(dplyr::all_of(columns_to_select), ~format_percent(.x)))
+    if (!is.null(poly_items$r2)) {
+      pred_results$R2 <- round(unname(poly_items$r2[pred_results$ID]), 3)
+    }
 
     id_order <- data.frame(
       ID              = rownames(prediction),
@@ -414,8 +417,15 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       
       prediction <- BIGpopA::solve_composition_poly(validation, freq, ploidy = input$ploidy)
       prediction <- as.data.frame(prediction, check.names = FALSE)
-      prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
       prediction[] <- lapply(prediction, as.numeric)
+
+      # R2 (model fit) is shown as its own column, not as a line
+      poly_items$r2 <- if ("R2" %in% colnames(prediction)) {
+        stats::setNames(prediction$R2, rownames(prediction))
+      } else {
+        NULL
+      }
+      prediction <- prediction[, !colnames(prediction) %in% c("R2"), drop = FALSE]
 
       # Line assignment is derived reactively from the stored proportions
       #   (see "Line assignment" below), so the threshold applies without re-running
@@ -518,30 +528,20 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
   # The button sits in a dropdown hidden at start-up; keep its link active
   shiny::outputOptions(output, "download_poly_figure", suspendWhenHidden = FALSE)
   
-  #  Example tables
-  example_ids_df <- data.frame(
-    Group1 = c("SampleAlpha", "S3", "ExampleFour", "", ""),
-    Group2 = c("SampleOne", "SampleTwo", "SampleThree", "SampleFour", "SampleFive"),
-    Group3 = c("SampleX", "SampleYy", "SampleZzzz", "ExampleEight", "")
-  )
-  example_genos_df <- data.frame(
-    ID      = paste0("Sample", c("1", "2", "3", "4", "5")),
-    Marker1 = as.integer(c(0, 0, 1, 2, 1)),
-    Marker2 = as.integer(c(NA, 1, 0, 1, 2)),
-    Marker3 = as.integer(c(0, 0, NA, 1, 1)),
-    Marker4 = as.integer(c(0, 0, 0, 0, 0))
-  )
-  
+  #  Example files (inst/extdata): previews and downloads
+  output$download_examples <- example_download_handler(example_files$polybreedtools,
+                                                       "breedtools_examples.zip")
+
+  example_ids_df   <- read_example_table("example_breedtools_ref_ids.txt",   n_rows = 8, n_cols = 3)
+  example_genos_df <- read_example_table("example_breedtools_reference.txt", n_rows = 5, n_cols = 6)
+
   output$example_ids   <- renderTable({ example_ids_df   }, bordered = TRUE)
-  output$example_genos <- renderTable({ example_genos_df }, bordered = TRUE)
-  
-  output$download_ids <- downloadHandler(
-    filename = function() "sample_reference_ids.txt",
-    content  = function(file) write.table(example_ids_df, file, sep = "\t", row.names = FALSE, quote = FALSE)
-  )
-  output$download_genos <- downloadHandler(
-    filename = function() "sample_genotypes.txt",
-    content  = function(file) write.table(example_genos_df, file, sep = "\t", row.names = FALSE, quote = FALSE)
+  output$example_genos <- renderTable({ example_genos_df }, bordered = TRUE, digits = 0)
+
+  output$download_ids   <- example_download_handler("example_breedtools_ref_ids.txt")
+  output$download_genos <- example_download_handler(
+    c("example_breedtools_reference.txt", "example_breedtools_validation.txt"),
+    "breedtools_example_genotypes.zip"
   )
 }
 

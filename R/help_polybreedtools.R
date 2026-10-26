@@ -101,7 +101,8 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::p(
       "PolyBreedTools estimates the proportion of each line or breed in a validation population
        using a reference panel of known genotypes. It supports any ploidy level and produces
-       both a results table and a stacked ancestry bar plot.",
+       both a results table and a stacked ancestry bar plot. The Example files link in the
+       Inputs box downloads a small tetraploid data set (set Ploidy to 4).",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -113,8 +114,8 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
         "<strong>Upload Reference Genotypes</strong> - either a tab-separated <code>.txt</code> or
-  comma-separated <code>.csv</code> file with samples in rows and SNP markers in columns (first
-  column <code>ID</code>, missing values coded as <code>NA</code>), a VCF
+  comma-separated <code>.csv</code> file with samples in rows and SNP markers in columns (an
+  <code>ID</code> column in any case, missing values coded as <code>NA</code>), a VCF
   (<code>.vcf</code> / <code>.vcf.gz</code>), or a PLINK <code>.ped</code> file (diploid only).
   For a <code>.ped</code>, a <strong>Reference Map (.map)</strong> input appears; upload the matching
   <code>.map</code> file there."
@@ -136,7 +137,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
       shiny::tags$li(shiny::HTML(
         "<strong>Set Assignment threshold (%)</strong> - each sample is assigned to the line with its
   highest estimated proportion only if that proportion is at least this value; otherwise its
-  Predicted line is <code>Undetermined</code>. The default of 0 always assigns the highest line.
+  Predicted line is <code>Undetermined</code>. The default is 50; use 0 to always assign the highest line.
   Changing the threshold updates the results immediately, without re-running the estimation."
       )),
       shiny::tags$li(shiny::HTML("<strong>Run Estimation</strong> - computes ancestry proportions for each validation sample.")),
@@ -171,7 +172,7 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
           geno_row("Sample3", "2", "0",  "NA")
         )),
         shiny::p(
-          "The first column must be named ID. All other columns are treated as SNP markers.",
+          "The ID column name is not case sensitive (ID, id, Id). All other columns are treated as SNP markers.",
           style = "color: #6c757d; font-size: 11px;"
         )
       )
@@ -316,9 +317,17 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::tags$ul(
       style = "font-size: 13px;",
       shiny::tags$li(shiny::HTML(
-        "<strong>Results Table</strong> - downloadable as <code>.xlsx</code> via <em>Save Excel File</em>.
-         Contains each validation sample's estimated ancestry proportion per group and its predicted line
-         (<code>Undetermined</code> when the highest proportion is below the assignment threshold)."
+        "<strong>Results Table</strong> - <em>Download Results</em> gives a zip with
+         <code>lineage_estimation_&lt;date&gt;.xlsx</code>. It contains each validation sample's estimated
+         ancestry proportion per group, its predicted line (<code>Undetermined</code> when the highest
+         proportion is below the assignment threshold) and <code>R2</code>."
+      )),
+      shiny::tags$li(shiny::HTML(
+        "<strong>R2</strong> - how well the estimated mix of reference lines explains the sample: the squared
+         correlation between its dosages divided by the ploidy and the line frequencies weighted by its
+         estimated proportions. It describes the fit, not the accuracy of the proportions, and is usually well
+         below 1 even for pure samples. Compare it between samples: a much lower R2 than the rest suggests a
+         line missing from the reference panel or poor-quality genotypes."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Ancestry Plot</strong> - stacked bar chart of ancestry proportions.

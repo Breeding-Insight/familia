@@ -79,6 +79,35 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
   geno
 }
 
+#' Write an uploaded genotype file as a LEA .geno file (SNMF)
+#'
+#' Reads the upload with read_genotype_upload(), the reader used by the other
+#' tabs (a VCF is converted with BIGpopA::vcf_to_dosage() and stops when the
+#' Ploidy does not match it), then writes the LEA .geno format: one line per
+#' marker and one digit per sample (0 to ploidy, 9 = missing).
+#' LEA::write.geno() is not used because it only accepts 0, 1, 2 and 9.
+#'
+#' @param file_input A Shiny fileInput value (list with name and datapath).
+#' @param geno_path Path of the .geno file to write.
+#' @param ploidy Integer ploidy, up to 8 (one digit per call).
+#' @return A list with geno_path and sample_ids.
+#' @noRd
+write_geno_upload <- function(file_input, geno_path, ploidy) {
+  ploidy <- as.integer(ploidy)
+  if (ploidy > 8) {
+    stop("SNMF supports ploidy up to 8 (one digit per call in the .geno file).", call. = FALSE)
+  }
+  geno <- read_genotype_upload(file_input, ploidy = ploidy)
+  dose <- as.matrix(geno[, names(geno) != "id", drop = FALSE])   # samples x markers
+  if (nrow(dose) == 0 || ncol(dose) == 0) {
+    stop("No genotype calls were found in the uploaded file.", call. = FALSE)
+  }
+  dose[is.na(dose) | dose < 0 | dose > ploidy] <- 9
+  storage.mode(dose) <- "integer"
+  writeLines(apply(dose, 2, paste, collapse = ""), geno_path)   # one line per marker
+  list(geno_path = geno_path, sample_ids = as.character(geno$id))
+}
+
 #' Describe a ploidy level for messages, e.g. "tetraploid (ploidy 4)"
 #' @noRd
 ploidy_label <- function(p) {
@@ -86,16 +115,6 @@ ploidy_label <- function(p) {
            `5` = "pentaploid", `6` = "hexaploid", `8` = "octoploid")
   key <- as.character(p)
   if (key %in% names(lbl)) paste0(lbl[[key]], " (ploidy ", p, ")") else paste("ploidy", p)
-}
-
-#' Most common ploidy (allele slots per call) in a VCF GT matrix
-#' @noRd
-gt_ploidy <- function(gt) {
-  calls <- as.vector(gt)
-  calls <- calls[!is.na(calls) & nzchar(calls)]
-  if (length(calls) == 0) return(NA_integer_)
-  slots <- lengths(strsplit(calls, "[/|]"))
-  as.integer(names(which.max(table(slots))))
 }
 
 #' Stop when the selected ploidy differs from the VCF's most common ploidy
@@ -147,20 +166,71 @@ save_plot_file <- function(plot, file, ext, width = 8, height = 5, dpi = 300) {
   invisible(file)
 }
 
-#' Convert GT format to numeric dosage
-#' @param gt a genotype matrix with samples as columns and variants as rows
-#' @return numeric genotype values
+#' Example input files of each tab (inst/extdata)
+#'
+#' Simulated by data-raw/make_example_data.R and used in the user guide.
 #' @noRd
-convert_to_dosage <- function(gt) {
-  # Split the genotype string
-  alleles <- strsplit(gt, "[|/]")
-  # Sum the alleles; missing alleles (".", NA) make the whole call NA
-  sapply(alleles, function(x) {
-    x <- suppressWarnings(as.numeric(x))
-    if (any(is.na(x))) {
-      return(NA)
-    } else {
-      return(sum(x))
-    }
-  })
+example_files <- list(
+  ped_cleaner    = c("example_pedigree.txt"),
+  validate_ped   = c("example_pedigree_cleaned.txt", "example_genotypes.txt",
+                     "example_founders.txt", "example_genotypes.vcf",
+                     "example_genotypes.ped", "example_genotypes.map"),
+  find_parentage = c("example_genotypes.txt", "example_parents.txt",
+                     "example_progeny.txt", "example_pedigree_validated.txt",
+                     "example_founders.txt"),
+  polybreedtools = c("example_breedtools_reference.txt", "example_breedtools_ref_ids.txt",
+                     "example_breedtools_validation.txt"),
+  snmf           = c("example_snmf.vcf")
+)
+
+#' Download handler for example files: one file as is, several as a zip
+#'
+#' @param files File names in inst/extdata.
+#' @param zip_name Name of the zip file when there are several files.
+#' @noRd
+example_download_handler <- function(files, zip_name = "familia_example_files.zip") {
+  shiny::downloadHandler(
+    filename = function() if (length(files) == 1) files else zip_name,
+    content  = function(file) {
+      paths <- vapply(files, function(f) app_sys("extdata", f), character(1))
+      if (!all(nzchar(paths))) {
+        shiny::showNotification("Example files not found. Reinstall Familia.",
+                                type = "error", duration = 10)
+        stop("Example files not found: ", paste(files[!nzchar(paths)], collapse = ", "))
+      }
+      if (length(files) == 1) {
+        file.copy(paths, file, overwrite = TRUE)
+      } else {
+        zip::zip(zipfile = file, files = files, root = dirname(paths[1]))
+      }
+    },
+    contentType = if (length(files) == 1) NA else "application/zip"
+  )
+}
+
+#' "Example files" link for the Inputs box of a tab
+#'
+#' Pair with output$download_examples <- example_download_handler(files).
+#' @param ns Module namespace function.
+#' @param files File names in inst/extdata (listed when hovering the link).
+#' @noRd
+example_files_ui <- function(ns, files) {
+  label <- if (length(files) == 1) "Example file" else "Example files (.zip)"
+  shiny::div(
+    style = "font-size: 12px; margin-bottom: 12px;",
+    shiny::downloadLink(ns("download_examples"),
+                        shiny::tagList(shiny::icon("file-arrow-down"), label),
+                        title = paste(files, collapse = ", "))
+  )
+}
+
+#' First rows and columns of an example file, or NULL if it is missing
+#' @noRd
+read_example_table <- function(file, n_rows = 5, n_cols = 6) {
+  path <- app_sys("extdata", file)
+  if (!nzchar(path)) return(NULL)   # read.delim("") would wait for console input
+  tryCatch({
+    x <- utils::read.delim(path, check.names = FALSE, stringsAsFactors = FALSE)
+    utils::head(x[, seq_len(min(n_cols, ncol(x))), drop = FALSE], n_rows)
+  }, error = function(e) NULL)
 }

@@ -108,7 +108,8 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       "The Find Parentage module assigns the most likely parents to each progeny individual
       using genotype data and Mendelian error analysis. Upload genotype, parents, and progeny
       files, select a method, set parameters, and run the assignment. Results are categorized
-      as Pass, High Error, or Low Markers, and can be exported as a .zip file.",
+      as Pass, High Error, or Low Markers, and can be exported as a .zip file. The Example
+      files link in the Inputs box downloads a small data set to try the tab.",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -134,10 +135,15 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
         <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>)."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Progeny File</strong> - must include an <code>id</code> column."
+        "<strong>Upload a Progeny / Pedigree File</strong> - either a list of progeny with an <code>id</code> column, or a pedigree with <code>id</code>, <code>male_parent</code> and <code>female_parent</code> columns (required for Fill in pedigree)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Select a Method</strong> and configure parameters (error threshold, minimum markers, ploidy, ties, selfing, self-match)."
+      )),
+      shiny::tags$li(shiny::HTML(
+        "<strong>Fill in pedigree only: upload a Founders File</strong> (optional, one id per line). Founders
+        with both parents unknown are skipped. Without it, every individual with both parents unknown,
+        founders included, gets a full parent search."
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Parentage Assignment</strong> to execute the analysis.")),
       shiny::tags$li(shiny::HTML(
@@ -160,7 +166,9 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "Finds the male-female parent pair that minimises the Mendelian error rate for each progeny.
-          Use this when both parents are unknown and sex information is available in the parents file.",
+          Use this when both parents are unknown and sex information is available in the parents file.
+          Score: the trio Mendelian error over every marker where the progeny and both candidates have
+          a call, heterozygous markers included (the same test as Validate Pedigree).",
           style = "margin-bottom: 0;"
         )
       )
@@ -172,8 +180,11 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Best Male Parent",
       body_content = shiny::tagList(
         shiny::p(
-          "Identifies the best male parent for each progeny while the female parent is already known
-          or not of interest. Requires <code>sex</code> column in the parents file.",
+          shiny::HTML(
+            "Identifies the best male parent for each progeny while the female parent is already known
+            or not of interest. Requires <code>sex</code> column in the parents file. Score: the
+            single-parent error, using only markers where the candidate and the progeny are both homozygous."
+          ),
           style = "margin-bottom: 0;"
         )
       )
@@ -185,8 +196,10 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Best Female Parent",
       body_content = shiny::tagList(
         shiny::p(
-          "Identifies the best female parent for each progeny. Requires <code>sex</code> column
-          in the parents file.",
+          shiny::HTML(
+            "Identifies the best female parent for each progeny. Requires <code>sex</code> column
+            in the parents file. Score: the single-parent error on homozygous markers, as for Best Male Parent."
+          ),
           style = "margin-bottom: 0;"
         )
       )
@@ -199,7 +212,9 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "Finds the single parent (sex-agnostic) with the best genotype match to the progeny.
-          Suitable for self-pollinating or vegetatively propagated species.",
+          Suitable for self-pollinating or vegetatively propagated species. Score: the single-parent
+          error on homozygous markers. Prefer Best Pair when both parents are among the candidates,
+          because it uses all markers and both parents together.",
           style = "margin-bottom: 0;"
         )
       )
@@ -271,6 +286,42 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       )
     ),
     
+    collapse_fn(
+      panel_id     = pid("fp_help_fill_pedigree"),
+      icon_name    = "puzzle-piece",
+      label        = "Fill in Pedigree",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Available when the Progeny File is a pedigree with id, male_parent and female_parent columns
+          (for example the corrected pedigree from Validate Pedigree). A parent coded 0, NA or empty is unknown.
+          A known male searches only females, a known female searches only males, and rows with both parents
+          unknown get the full pair search, unless they are listed in the optional Founders File. Rows with
+          both parents known are skipped. The Parents File (M/F/A) is still required for the candidates.
+          Results add search_mode and known_parent_error_pct; a high known_parent_error_pct suggests the
+          known parent is wrong. A known parent without genotypes gives the status known_parent_no_genotype,
+          which is listed only in full_results.txt.",
+          style = "margin-bottom: 0;"
+        )
+      )
+    ),
+
+    collapse_fn(
+      panel_id     = pid("fp_help_top_n"),
+      icon_name    = "list-ol",
+      label        = "Top N Matches",
+      body_content = shiny::tagList(
+        shiny::p(
+          "Number of best candidates reported per progeny (default 1). With N > 1, candidates are ranked by
+          Mendelian error (ties broken by markers tested). Rank 1 stays in the main columns and ranks 2 to N are
+          added as suffix columns (e.g. male_parent_2, female_parent_2, mendelian_error_pct_2, markers_tested_2).
+          Ties are ranked like any other candidate, so Show Ties has no effect when N > 1.
+          Status refers to rank 1 only. The tied_candidates column gives the number of candidates that share the
+          lowest error; values above 1 mean the best assignment is ambiguous.",
+          style = "margin-bottom: 0;"
+        )
+      )
+    ),
+
     collapse_fn(
       panel_id     = pid("fp_help_selfing"),
       icon_name    = "rotate",
@@ -363,7 +414,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
-      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all progeny assignments, tab-separated.")),
+      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all progeny assignments, tab-separated, including statuses that have no table in the app (e.g. <code>known_parent_no_genotype</code>).")),
       shiny::tags$li(shiny::HTML("<code>pass.txt</code> - progeny with confident assignments (if any).")),
       shiny::tags$li(shiny::HTML("<code>high_error.txt</code> - progeny exceeding the error threshold (if any).")),
       shiny::tags$li(shiny::HTML("<code>low_markers.txt</code> - progeny with insufficient markers (if any)."))

@@ -1,3 +1,50 @@
+# Familia 2.2.0
+
+* Every tab has an **Example files** link in its Inputs box that downloads a
+  small simulated data set (`inst/extdata`, made by `data-raw/make_example_data.R`).
+  It is the data set used in the user guide.
+* Find Parentage: new optional **Founders File**, shown for *Fill in pedigree* and
+  passed to the BIGpopA `founders_file` argument. Founders with both parents unknown are
+  skipped; without the file a notification warns that every individual with both
+  parents unknown, founders included, gets a full parent search.
+* PolyBreedTools: the Results Table and the Excel file include `R2`, the model
+  fit of each sample, explained in the Instructions and Help. The Instructions
+  no longer say that the first column must be `ID` (any column named `ID`, in
+  any case, is used). The Example Inputs box shows and downloads the example files.
+* Validate Pedigree: the founders file also accepts `.csv` and `.tsv`, and the
+  Instructions explain what it does.
+* Help: the Best male / female parent panels showed `<code>` tags as text; the
+  method panels now give the score each method uses.
+* SNMF: VCF uploads are read with the same reader as the other tabs (BIGpopA
+  `vcf_to_dosage()`, which drops multiallelic markers) and written as a LEA
+  `.geno` file directly. Polyploid VCFs used to fail with "'R' matrix can only
+  contains 0, 1, 2 or 9", because `LEA::write.geno()` only accepts diploid
+  calls; ploidy up to 8 is now supported.
+* **Check for Updates** looked up the BIGapp releases and compared versions as
+  text. It now checks the Familia releases, compares version numbers (so
+  2.10.0 is newer than 2.9.0) and shows a message when GitHub cannot be reached.
+* The logo in the top bar was not shown on case-sensitive file systems (e.g. Linux servers).
+* Validate Pedigree and Find Parentage no longer write `Rplots.pdf` to the
+  working directory (or open a plot window) when they run; the plot is only
+  shown in the app.
+* Removed unused internal code and imports.
+* New short vignette (`vignette("Familia")`) that explains how to launch the app and what each tab does.
+* Find Parentage: the progeny input is now labeled **Progeny / Pedigree File** and its instructions state that a pedigree file is accepted.
+* Find Parentage: new **Top N** input reports the best N candidates per progeny,
+  and results include a `tied_candidates` count that flags ambiguous assignments.
+* Find Parentage: new **Fill in pedigree** method fills missing parents of a
+  pedigree. It is grayed out unless the progeny file is a 3-column pedigree
+  (`id`, `male_parent`, `female_parent`); the parents file with sex M/F/A is
+  still required.
+* Validate Pedigree: new **Marker Summary** table (per-marker trios tested,
+  mismatches and mismatch %) and `marker_summary.txt` in the download.
+* Validate Pedigree: new **Marker Trio Table** (status of every marker in every trio,
+  from BIGpopA `marker_trio_table`) shown in the results and saved as
+  `marker_trio_table.txt` in the download.
+* Validate Pedigree no longer reports suggested replacement parents (removed in BIGpopA 2.2.0); use Find Parentage > Fill in pedigree on the corrected pedigree instead.
+* Updated the Help panels for the new options.
+* Requires 'BIGpopA' (>= 2.2.0).
+
 # Familia 2.1.0
 
 * Find Parentage, Validate Pedigree and PolyBreedTools now accept genotypes as
@@ -8,8 +55,8 @@
   are matched by name. If either genotype file is a .ped, both must be; the
   validation .ped is coded with the reference panel's counted allele per marker.
 * PolyBreedTools: new **Assignment threshold (%)** input. Samples whose highest
-  line proportion is below the threshold are labelled "Undetermined". Changes
-  apply without re-running the estimation. Default 0 keeps the previous behavior.
+  line proportion is below the threshold are labeled "Undetermined". Changes
+  apply without re-running the estimation. The default is 50; use 0 to always assign the highest line.
 * SNMF: the plot, Q matrix and downloads use the best (lowest cross-entropy)
   run for the selected K by default. The manual run selector moved to an
   **Advanced Options** dialog for diagnostics; changing K or re-running resets

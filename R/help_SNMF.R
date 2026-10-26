@@ -74,7 +74,8 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       "The SNMF module runs unsupervised ancestry estimation using ",
       shiny::tags$code("LEA::snmf()"),
       ". It estimates Q-matrices (ancestry proportions per individual per cluster) across
-       a range of K values, optionally using cross-entropy to identify the best K.",
+       a range of K values, optionally using cross-entropy to identify the best K. The Example
+       file link in the Inputs box downloads a small tetraploid VCF (set Ploidy to 4).",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),

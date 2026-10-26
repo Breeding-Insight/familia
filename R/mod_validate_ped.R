@@ -23,9 +23,10 @@ mod_validate_ped_ui <- function(id) {
             "Upload a pedigree file and a genotypes file to validate trios using Mendelian error analysis.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
+          example_files_ui(ns, example_files$validate_ped),
           shiny::fileInput(ns("pedigree_file"),  "Pedigree File",  accept = c(".txt", ".tsv", ".csv")),
           shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
-          shiny::fileInput(ns("founders_file"),  "Founders File",    accept = c(".txt")),
+          shiny::fileInput(ns("founders_file"),  "Founders File (optional)", accept = c(".txt", ".tsv", ".csv")),
           shiny::hr(),
           shiny::p("Parameters:", style = "color: #6c757d; font-size: 12px; margin-bottom: 5px;"),
           shiny::numericInput(ns("trio_error_threshold"),
@@ -78,7 +79,7 @@ mod_validate_ped_ui <- function(id) {
                   <ul>
                     <li>Upload a pedigree file with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
                     <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
-                    <li>Optionally upload a founders file (single column of founder IDs) to preserve founder trios.</li>
+                    <li>Optionally upload a founders file (one id per line, no header). Individuals with both parents <code>0</code> that are listed in it are reported as Founders instead of Missing Parents.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
                     <li>Results are split into:</li>
@@ -184,7 +185,11 @@ mod_validate_ped_server <- function(id, parent_session) {
     parentage_results <- shiny::reactiveVal(NULL)
     
     validate_results <- shiny::reactiveVal(NULL)
-    
+
+    # Example files
+    output$download_examples <- example_download_handler(example_files$validate_ped,
+                                                         "validate_pedigree_examples.zip")
+
     make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
         class = "card mb-1",
@@ -262,16 +267,23 @@ mod_validate_ped_server <- function(id, parent_session) {
           title = "Evaluating trios..."
         )
         
-        report <- BIGpopA::validate_pedigree(
-          pedigree_file                 = ped_raw,
-          genotypes_file                = geno_raw,
-          founders_file                 = founders_path,
-          trio_error_threshold          = as.numeric(input$trio_error_threshold),
-          min_markers                   = as.integer(input$min_markers),
-          single_parent_error_threshold = as.numeric(input$single_parent_error_threshold),
-          ploidy                        = as.integer(input$ploidy),
-          verbose                       = FALSE,
-          plot_results                  = TRUE
+        # BIGpopA also prints the plot: send it to a null device, so it does not
+        # open a plot window or write Rplots.pdf in the working directory
+        grDevices::pdf(NULL)
+        report <- tryCatch(
+          BIGpopA::validate_pedigree(
+            pedigree_file                 = ped_raw,
+            genotypes_file                = geno_raw,
+            founders_file                 = founders_path,
+            trio_error_threshold          = as.numeric(input$trio_error_threshold),
+            min_markers                   = as.integer(input$min_markers),
+            single_parent_error_threshold = as.numeric(input$single_parent_error_threshold),
+            ploidy                        = as.integer(input$ploidy),
+            verbose                       = FALSE,
+            plot_results                  = TRUE,
+            marker_trio_table             = TRUE
+          ),
+          finally = grDevices::dev.off()
         )
         
         shinyWidgets::updateProgressBar(
@@ -386,6 +398,8 @@ mod_validate_ped_server <- function(id, parent_session) {
       render_if("No Genotype Data",  report$no_genotype_data)
       render_if("Founders",          report$founders)
       render_if("Missing Parents",   report$missing_parents)
+      render_if("Marker Summary",    report$marker_summary)
+      render_if("Marker Trio Table", report$marker_trio_table)
       
       shiny::tagList(
         shiny::h5(
@@ -397,7 +411,9 @@ mod_validate_ped_server <- function(id, parent_session) {
         make_section("Low Markers",      "triangle-exclamation", report$low_markers, "#856404"),
         make_section("No Genotype Data", "database",     report$no_genotype_data, "#6c757d"),
         make_section("Founders",         "seedling",     report$founders,         "#0c5460"),
-        make_section("Missing Parents",  "user-slash",   report$missing_parents,  "#856404")
+        make_section("Missing Parents",  "user-slash",   report$missing_parents,  "#856404"),
+        make_section("Marker Summary",   "table",        report$marker_summary,   "#0c5460"),
+        make_section("Marker Trio Table", "table-cells", report$marker_trio_table, "#0c5460")
       )
     })
     
@@ -462,7 +478,9 @@ mod_validate_ped_server <- function(id, parent_session) {
           low_markers      = report$low_markers,
           no_genotype_data = report$no_genotype_data,
           founders         = report$founders,
-          missing_parents  = report$missing_parents
+          missing_parents  = report$missing_parents,
+          marker_summary   = report$marker_summary,
+          marker_trio_table = report$marker_trio_table
         )
         for (nm in names(sections)) {
           df <- sections[[nm]]

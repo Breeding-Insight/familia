@@ -60,11 +60,6 @@ test_that("a VCF whose ploidy differs from the selection gives the suggested plo
   expect_silent(read_genotype_upload(vcf, ploidy = 4))
 })
 
-test_that("gt_ploidy finds the most common call length", {
-  expect_identical(gt_ploidy(c("0/1", "1/1", "0/0/0/1", "./.")), 2L)
-  expect_identical(gt_ploidy(c("0|1|1|1", "0/0/0/0")),            4L)
-})
-
 test_that("a .ped upload uses the .map names and keeps the counted alleles", {
   ped <- fake_upload(c("F A 0 0 0 -9 A A G G", "F B 0 0 0 -9 A G G G"), "geno.ped")
   map <- fake_upload(c("1\tsnpX\t0\t100", "1\tsnpY\t0\t200"),         "geno.map")
@@ -82,6 +77,26 @@ test_that("a validation .ped is coded with the reference counted allele", {
                                counted_allele = c(SNP1 = "G", SNP2 = "G"))
   expect_equal(geno$SNP1, 0L)
   expect_equal(geno$SNP2, 2L)
+})
+
+test_that("write_geno_upload() writes a polyploid VCF as a LEA .geno file (SNMF)", {
+  vcf <- fake_upload(c(
+    "##fileformat=VCFv4.3",
+    "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">",
+    paste("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO",
+          "FORMAT", "A", "B", "C", sep = "\t"),
+    paste("chr1", "100", "snp1", "A", "G", ".", ".", ".", "GT", "0/0/0/0", "0/1/1/1", "1/1/1/1", sep = "\t"),
+    paste("chr1", "200", "snp2", "C", "T", ".", ".", ".", "GT", "0/0/1/1", "./././.", "0/0/0/1", sep = "\t")
+  ), "tetra.vcf")
+
+  # one line per marker, one digit per sample, 9 = missing
+  geno_path <- tempfile(fileext = ".geno")
+  out <- write_geno_upload(vcf, geno_path, ploidy = 4)
+  expect_identical(readLines(geno_path), c("034", "291"))
+  expect_identical(out$sample_ids, c("A", "B", "C"))
+
+  # same ploidy check as the other tabs
+  expect_error(write_geno_upload(vcf, tempfile(), ploidy = 2), "Set Ploidy to 4")
 })
 
 test_that("invalid uploads give clear errors", {

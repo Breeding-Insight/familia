@@ -1,6 +1,6 @@
 Package: Familia
 Title: 'shiny' Application for Population Structure and Ancestry Assessments
-Version: 2.1.0
+Version: 2.2.0
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
@@ -35,7 +35,7 @@ Roxygen: list(markdown = TRUE)
 Depends: R (>= 4.4.0)
 biocViews:
 Imports:
-    BIGpopA (>= 2.1.0),
+    BIGpopA (>= 2.2.0),
     bs4Dash,
     config,
     curl,
@@ -58,9 +58,12 @@ Imports:
     withr,
     zip
 Suggests:
+    knitr,
     LEA,
+    rmarkdown,
     spelling,
     svglite,
     testthat
+VignetteBuilder: knitr
 Language: en-US
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1
