@@ -156,6 +156,21 @@ maximize <- function(app, inner_id, on = TRUE) {
   adjust_tables(app)
 }
 
+# Let the results box that holds `inner_id` grow to show its whole tab panel
+# (on = TRUE), or restore its fixed height; the page around it stays visible
+expand <- function(app, inner_id, on = TRUE) {
+  js(app, sprintf(
+    "var card = document.getElementById('%s').closest('.card');
+     var els = [card.querySelector('.card-body')].concat(Array.from(card.querySelectorAll('.tab-pane')));
+     els.forEach(function(p) {
+       if (p.dataset.height === undefined) p.dataset.height = p.style.height;
+       p.style.height = %s;
+     });",
+    inner_id, if (on) "'auto'" else "p.dataset.height"),
+    wait = 1)
+  adjust_tables(app)
+}
+
 # Scroll a tab panel so the section that holds `el_id` is at the top
 scroll_to <- function(app, el_id) {
   js(app, sprintf(
@@ -293,9 +308,14 @@ make_screenshots <- function() {
       run_and_wait(app, "SNMF_1-snmf_run", "SNMF_1-pb_snmf-title", "Complete",
                    timeout = 5 * 60 * 1000)
       open_results_tab(app, "SNMF_1-snmf_results_tabs", "Cross-Entropy")
+      expand(app, "SNMF_1-snmf_results_tabs")   # plot and summary table, with the value boxes
       shot(app, "22_snmf_cross_entropy.png")
+      expand(app, "SNMF_1-snmf_results_tabs", on = FALSE)
       open_results_tab(app, "SNMF_1-snmf_results_tabs", "Ancestry Plot")
-      shot(app, "23_snmf_ancestry_plot.png")
+      maximize(app, "SNMF_1-snmf_results_tabs")   # wide plot, so every sample label fits
+      idle(app)
+      shot(app, "23_snmf_ancestry_plot.png", max_card)
+      maximize(app, "SNMF_1-snmf_results_tabs", on = FALSE)
     } else {
       message("LEA is not installed: SNMF screenshots skipped (BiocManager::install(\"LEA\")).")
     }

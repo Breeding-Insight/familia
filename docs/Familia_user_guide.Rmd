@@ -21,7 +21,8 @@ output:
 ---
 
 <!-- Screenshots: run source("docs/make_screenshots.R") from the package root
-     after source("data-raw/make_example_data.R"). -->
+     after source("data-raw/make_example_data.R"). docs/images is not kept in
+     git: the knitted HTML embeds the pictures, so make them again before knitting. -->
 
 ```{r, echo=FALSE}
 knitr::opts_chunk$set(
@@ -137,7 +138,7 @@ The screenshots use a small simulated data set that contains one case of every r
 list.files(system.file("extdata", package = "Familia"))
 ```
 
-The diploid data set has six genotyped founders (`M1`, `M2`, `M3`, `F1`, `F2`, `F3`), a founder without genotypes (`M4`), `M1c`, a second sample of `M1` with the same genotypes (a clone or a duplicated sample), and 38 offspring (`C01` to `C38`), genotyped at 300 SNPs. `C12` to `C38` are correct records; the other individuals carry the cases below. The tetraploid data set has three reference lines (`LineA`, `LineB` and `LineC`, 8 samples each) and 13 samples to assign (`V01` to `V13`).
+The diploid data set has six genotyped founders (`M1`, `M2`, `M3`, `F1`, `F2`, `F3`), a founder without genotypes (`M4`), `M1c`, a second sample of `M1` with the same genotypes (a clone or a duplicated sample), and 38 offspring (`C01` to `C38`), genotyped at 300 SNPs. `C12` to `C38` are correct records; the other individuals carry the cases below. The tetraploid data set has three reference lines (`LineA`, `LineB` and `LineC`, `r nrow(ref_ids)` samples each) and 13 samples to assign (`V01` to `V13`).
 
 | Individual | Case | Where it shows up |
 |---|---|---|
@@ -494,7 +495,7 @@ The Results Table gives, for each sample, the percentage of each reference line,
 
 ![BreedTools Results Table with the percentage of each line, the predicted line and R2 for the 13 samples.](images/19_breedtools_results.png)
 
-In the example, `V01` to `V09` get `r min(pure_pct)`% to `r max(pure_pct)`% of their own line; with 8 reference samples per line and 300 markers, pure samples rarely reach exactly 100%. `V10` is `r get_val(bt, "V10", "LineA")`% `LineA` and is assigned to it, while `V11` and `V12` have no line above 50% and are `Undetermined`. `V13` comes from a fourth line that is not in the reference panel: its proportions (`r paste0(names(v13), " ", unlist(v13), "%", collapse = ", ")`) look like an ordinary sample, but its `R2` is `r get_val(bt, "V13", "R2")`, against `r min(bt$R2[bt$ID != "V13"])` to `r max(bt$R2[bt$ID != "V13"])` for the other samples.
+In the example, `V01` to `V09` get `r min(pure_pct)`% to `r max(pure_pct)`% of their own line. `V10` is `r get_val(bt, "V10", "LineA")`% `LineA` and is assigned to it, while `V11` and `V12` have no line above 50% and are `Undetermined`. `V13` comes from a fourth line that is not in the reference panel: its proportions (`r paste0(names(v13), " ", unlist(v13), "%", collapse = ", ")`) look like an ordinary sample, but its `R2` is `r get_val(bt, "V13", "R2")`, against `r min(bt$R2[bt$ID != "V13"])` to `r max(bt$R2[bt$ID != "V13"])` for the other samples.
 
 The Ancestry Plot shows the same proportions as stacked bars, one per sample. Use **Plot Controls** for the palette, sample labels and sorting.
 
@@ -504,7 +505,7 @@ The Ancestry Plot shows the same proportions as stacked bars, one per sample. Us
 
 # SNMF
 
-SNMF estimates ancestry proportions without a reference panel, using sparse non-negative matrix factorization (`LEA::snmf()`). Use it to discover structure when you do not know the groups in advance. The example VCF has the 37 tetraploid samples of the BreedTools example.
+SNMF estimates ancestry proportions without a reference panel, using sparse non-negative matrix factorization (`LEA::snmf()`). Use it to discover structure when you do not know the groups in advance. The example VCF has the `r nrow(reference) + nrow(validation)` tetraploid samples of the BreedTools example (reference and validation samples together).
 
 ## Parameters
 
@@ -529,7 +530,9 @@ The Cross-Entropy tab shows the lowest cross-entropy of each K. Choose K at the 
 
 The Ancestry Plot shows the ancestry coefficients of each sample at the selected K as stacked bars: samples dominated by one colour belong to one population, mixed colours indicate admixture. It uses the run with the lowest cross-entropy for that K; **Advanced Options**, under the K selector, lets you show another run to check how the repetitions converged.
 
-![SNMF ancestry plot of the 37 samples at the selected K, one colour per ancestral population.](images/23_snmf_ancestry_plot.png)
+In the example, at K = 3 the samples of each reference line form one population.
+
+![SNMF ancestry plot of the reference and validation samples at K = 3, one colour per ancestral population.](images/23_snmf_ancestry_plot.png)
 
 **Download Results** gives a zip with the Q matrix of the selected K and run (`snmf_Q_K<k>_run<r>.csv`) and `snmf_cross_entropy.csv`. **Save Image** saves either plot.
 

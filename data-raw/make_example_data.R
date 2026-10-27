@@ -26,13 +26,16 @@
 #   snp050, snp150 and snp250 are miscalled markers (random calls).
 #
 # Tetraploid line data (BreedTools and SNMF)
-#   Reference lines LineA, LineB, LineC with 8 samples each (RA01-RC08).
+#   Reference lines LineA, LineB, LineC with 20 samples each (RA01-RC20).
 #   Validation samples V01-V09 are pure (3 per line), V10 is 70% LineA and
 #   30% LineB, V11 is 25/40/35% and V12 an even three-way mix. V13 comes from
 #   a fourth line (LineD) that is not in the reference panel (low R2).
+#   SNMF on all these samples, with the settings of the guide screenshots,
+#   gives the lowest cross-entropy at K = 3, one population per reference line
+#   (checked when LEA is installed).
 #
 # The simulation is repeated with a new seed until every case above appears
-# (checked with BIGpopA, the same functions the app uses).
+# (checked with BIGpopA and LEA, the same functions the app uses).
 
 #### settings ####
 out_dir    <- file.path("inst", "extdata")
@@ -41,10 +44,15 @@ bad_snps   <- c("snp050", "snp150", "snp250")    # miscalled markers
 error_rate <- 0.003                              # call replaced by another dosage (offspring)
 miss_rate  <- 0.02                               # missing calls
 n_poly     <- 300                                # tetraploid markers
+n_ref      <- 20                                 # reference samples per line
+fst        <- 0.3                                # differentiation of the lines (Balding-Nichols)
 max_seed   <- 200
 
 if (!requireNamespace("BIGpopA", quietly = TRUE))
   stop("Install BIGpopA (>= 2.2.0) before running this script.")
+has_lea <- requireNamespace("LEA", quietly = TRUE)
+if (!has_lea)
+  message("LEA is not installed: the SNMF example (best K = 3) is not checked.")
 dir.create(out_dir, recursive = TRUE, showWarnings = FALSE)
 
 #### helpers ####
@@ -289,9 +297,9 @@ check_pedigree_data <- function(d) {
 
 #### tetraploid line data ####
 line_names <- c("LineA", "LineB", "LineC", "LineD")   # LineD is not in the reference panel
-ref_ids <- list(LineA = sprintf("RA%02d", 1:8),
-                LineB = sprintf("RB%02d", 1:8),
-                LineC = sprintf("RC%02d", 1:8))
+ref_ids <- list(LineA = sprintf("RA%02d", seq_len(n_ref)),
+                LineB = sprintf("RB%02d", seq_len(n_ref)),
+                LineC = sprintf("RC%02d", seq_len(n_ref)))
 
 # Validation samples: true proportion of LineA, LineB, LineC and LineD
 val_q <- rbind(
@@ -310,8 +318,7 @@ simulate_line_data <- function(seed) {
   set.seed(seed)
   markers <- sprintf("snp%03d", seq_len(n_poly))
 
-  # line frequencies around an ancestral frequency (Balding-Nichols, Fst = 0.2)
-  fst  <- 0.2
+  # line frequencies around an ancestral frequency (Balding-Nichols, Fst = fst)
   p0   <- stats::runif(n_poly, 0.1, 0.9)
   freq <- sapply(line_names, function(l)
     stats::rbeta(n_poly, p0 * (1 - fst) / fst, (1 - p0) * (1 - fst) / fst))
@@ -321,7 +328,7 @@ simulate_line_data <- function(seed) {
     add_noise(stats::rbinom(n_poly, 4, as.vector(freq %*% q)), ploidy = 4,
               error = 0, missing = 0.01)
   }
-  ref_line  <- rep(names(ref_ids), each = 8)
+  ref_line  <- rep(names(ref_ids), each = n_ref)
   reference <- t(sapply(ref_line, function(l) sim_sample(as.numeric(line_names == l))))
   rownames(reference) <- unlist(ref_ids)
   validation <- t(apply(val_q, 1, sim_sample))
@@ -342,7 +349,40 @@ check_line_data <- function(d) {
              "breedtools: unexpected predicted lines")
   chk$expect(r2["V13"] < 0.8 * min(r2[names(r2) != "V13"]),
              "breedtools: V13 does not have the lowest R2")
+
+  # SNMF is slower, so it only runs when BreedTools already gives every case
+  if (has_lea && length(chk$problems()) == 0) {
+    snmf <- check_snmf(rbind(d$reference, d$validation))
+    chk$expect(snmf$best_k == 3, paste0("snmf: lowest cross-entropy at K = ", snmf$best_k))
+    chk$expect(snmf$by_line,     "snmf: K = 3 does not give one population per line")
+  }
   chk$problems()
+}
+
+# SNMF with the settings of the guide screenshots (docs/make_screenshots.R,
+# other inputs at the app defaults), on a .geno written the way the app writes
+# it from the VCF, so the guide shows the same result
+check_snmf <- function(mat) {
+  run_dir <- tempfile("snmf_check_")
+  dir.create(run_dir)
+  on.exit(unlink(run_dir, recursive = TRUE), add = TRUE)
+  dose <- mat
+  dose[is.na(dose)] <- 9L
+  geno_path <- file.path(run_dir, "example_snmf.geno")
+  writeLines(apply(dose, 2, paste, collapse = ""), geno_path)   # one line per marker
+
+  utils::capture.output(project <- withr::with_dir(run_dir, LEA::snmf(
+    geno_path, K = 1:5, repetitions = 3, ploidy = 4, entropy = TRUE, alpha = 100,
+    iterations = 200L, tolerance = 1e-4, percentage = 0.05, CPU = 1L, seed = 123L)))
+  ce <- sapply(1:5, function(k) min(LEA::cross.entropy(project, K = k)))
+
+  # at K = 3 (best run) the samples of each reference line share one population
+  run3    <- which.min(LEA::cross.entropy(project, K = 3))
+  dom     <- apply(LEA::Q(project, K = 3, run = run3), 1, which.max)   # rows = samples
+  ref_dom <- split(dom[seq_len(3 * n_ref)], rep(names(ref_ids), each = n_ref))
+  list(best_k  = which.min(ce),
+       by_line = all(lengths(lapply(ref_dom, unique)) == 1) &&
+                 length(unique(vapply(ref_dom, `[`, integer(1), 1))) == 3)
 }
 
 #### simulate until every case appears ####
