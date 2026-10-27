@@ -2,8 +2,8 @@
 # Shiny fileInput values are lists with the original name and a renamed datapath,
 # so each test mimics that: the datapath has no meaningful extension.
 
-fake_upload <- function(lines, name) {
-  path <- tempfile()                      # Shiny-style path, no extension
+fake_upload <- function(lines, name, env = parent.frame()) {
+  path <- withr::local_tempfile(.local_envir = env)   # Shiny-style path, no extension; deleted after the test
   writeLines(lines, path)
   list(name = name, datapath = path)
 }
@@ -90,7 +90,7 @@ test_that("write_geno_upload() writes a polyploid VCF as a LEA .geno file (SNMF)
   ), "tetra.vcf")
 
   # one line per marker, one digit per sample, 9 = missing
-  geno_path <- tempfile(fileext = ".geno")
+  geno_path <- withr::local_tempfile(fileext = ".geno")
   out <- write_geno_upload(vcf, geno_path, ploidy = 4)
   expect_identical(readLines(geno_path), c("034", "291"))
   expect_identical(out$sample_ids, c("A", "B", "C"))
