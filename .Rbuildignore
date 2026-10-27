@@ -1,16 +1,9 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
-^LICENSE\.md$
-^README\.Rmd$
-^CODE_OF_CONDUCT\.md$
-^Dockerfile$
-^\.dockerignore$
 ^\.positai$
 ^\.claude$
 ^\.github$
-^app$
 ^app\.R$
-^dev$
 ^data-raw$
 ^\.RData$
 ^\.Rhistory$

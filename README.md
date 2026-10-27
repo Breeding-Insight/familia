@@ -151,7 +151,7 @@ You can obtain this citation (including a BibTeX entry) at any time by running `
 
 ## License
 Familia is released under the Apache License, Version 2.0.
-See the LICENSE file or https://www.apache.org/licenses/LICENSE-2.0 for details.
+See https://www.apache.org/licenses/LICENSE-2.0 for details.
 
 # Acknowledgments
 Familia is developed as part of the Breeding Insight initiative
