@@ -80,7 +80,8 @@ help_content_ped_cleaner <- function(collapse_fn = NULL, id_prefix = "") {
       Conflicting trios and inconsistent sex roles are corrected when their
       respective options are checked. Cycles and dependencies are reported only
       and must be resolved manually. The corrected pedigree and per-issue reports
-      are bundled into a single zip file for download.",
+      are bundled into a single zip file for download. The Example file link in the
+      Inputs box downloads a small pedigree with one case of each issue.",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),

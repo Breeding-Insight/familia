@@ -446,6 +446,13 @@
   color: #495057 !important; 
 }
 
-.card-tools .btn-tool:hover { 
-  color: #212529 !important; 
+.card-tools .btn-tool:hover {
+  color: #212529 !important;
+}
+
+/* ── Disabled choices in drop-down lists (e.g. Fill in pedigree) ── */
+.bootstrap-select .dropdown-menu li.disabled a,
+.bootstrap-select .dropdown-menu .dropdown-item.disabled {
+  color: #adb5bd !important;
+  cursor: not-allowed;
 }

@@ -1,0 +1,89 @@
+---
+title: "Familia Tutorial"
+subtitle: "Pedigree validation and ancestry assessment with a Shiny app"
+author: "Josue Chinchilla-Vargas, Alexander M. Sandercock, and the Breeding Insight Team"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+    toc_depth: 2
+vignette: >
+  %\VignetteIndexEntry{Familia Tutorial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE, message = FALSE, warning = FALSE)
+```
+
+# Introduction
+
+Familia is a Shiny app for pedigree validation and ancestry assessment of plant and animal populations. The app has five tabs: Pedigree Cleaner, Validate Pedigree, Find Parentage, BreedTools<sup>poly</sup> and SNMF. The pedigree tabs use the BIGpopA package, and the ancestry tabs use the LEA package (SNMF) and the BIGpopA composition functions (BreedTools<sup>poly</sup>). This short tutorial shows how to launch the app and what each tab does. The full user guide with screenshots is at <https://github.com/Breeding-Insight/Familia>.
+
+# Install and launch
+
+```{r}
+# install.packages("Familia")
+# or the development version
+# remotes::install_github("Breeding-Insight/Familia")
+
+library(Familia)
+run_app()
+```
+
+SNMF needs the LEA package from Bioconductor.
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+BiocManager::install("LEA")
+```
+
+# Input files
+
+Familia does not call dosages. Run your genotype calling pipeline first (we recommend BIGapp). Genotypes can be uploaded as a dosage table (`id` column followed by one column per marker, coded 0, 1, ..., ploidy), a VCF file or a PLINK `.ped` file (diploid only).
+
+| File | Format | Used by |
+|---|---|---|
+| Pedigree | `id`, `male_parent`, `female_parent` (unknown parent = `0`) | Pedigree Cleaner, Validate Pedigree |
+| Genotypes | Dosage table, VCF or PLINK `.ped` | All tabs |
+| Founders | One id per line | Validate Pedigree, Find Parentage (*Fill in pedigree*) |
+| Parents | `id` and optional `sex` (`M`, `F`, `A`) | Find Parentage |
+| Progeny / pedigree | `id` column, or a pedigree for *Fill in pedigree* | Find Parentage |
+
+Each tab has an **Example files** link in its Inputs box that downloads a small simulated data set for that tab. The same files are installed with the package:
+
+```{r}
+list.files(system.file("extdata", package = "Familia"))
+```
+
+# What each tab does
+
+| Tab | Purpose | Main output |
+|---|---|---|
+| Pedigree Cleaner | Find duplicates, conflicting trios, inconsistent sex roles, missing parents and cycles | Corrected pedigree and issue tables |
+| Validate Pedigree | Test recorded trios against genotypes with Mendelian errors | Status per trio, corrected pedigree, marker summary, marker x trio table |
+| Find Parentage | Search the best parents for each offspring | Best pair, best male, best female, best match or filled-in pedigree |
+| BreedTools<sup>poly</sup> | Estimate the proportion of each reference line in each sample | Composition table and plot |
+| SNMF | Unsupervised ancestry proportions for a range of K | Cross-entropy plot and ancestry plot |
+
+Each table can be downloaded as a zip file with **Download Results**, and each plot can be saved with **Save Image**.
+
+# Run the same analyses in R
+
+The pedigree and composition tabs call BIGpopA functions, so the same results can be produced in a script. See the BIGpopA tutorial for details.
+
+```{r}
+library(BIGpopA)
+ex <- function(f) system.file("extdata", f, package = "Familia")   # example files
+
+clean <- check_ped(ex("example_pedigree.txt"))
+valid <- validate_pedigree(clean$corrected_pedigree, ex("example_genotypes.txt"),
+                           founders_file = ex("example_founders.txt"),
+                           ploidy = 2, marker_trio_table = TRUE)
+valid$full_results
+```
+
+# How to cite
+
+Please cite Familia and BIGpopA as shown by `citation("Familia")` and `citation("BIGpopA")`.

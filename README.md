@@ -1,12 +1,16 @@
-
+<!-- badges: start -->
+[![Development Status](https://img.shields.io/badge/status-active%20development-yellow)](https://github.com/Breeding-Insight/Familia)
 [![R-CMD-check](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/Breeding-Insight/Familia/actions/workflows/R-CMD-check.yaml)
-[![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![CRAN status](https://www.r-pkg.org/badges/version/Familia)](https://CRAN.R-project.org/package=Familia)
+[![CRAN downloads](https://cranlogs.r-pkg.org/badges/grand-total/Familia)](https://CRAN.R-project.org/package=Familia)
+[![CRAN monthly downloads](https://cranlogs.r-pkg.org/badges/Familia)](https://CRAN.R-project.org/package=Familia)
+[![R](https://img.shields.io/badge/R-%3E%3D%204.4-blue)](https://www.r-project.org/)
 [![Shiny](https://img.shields.io/badge/Shiny-Web%20Application-blueviolet)](https://shiny.posit.co/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0)
 [![GitHub issues](https://img.shields.io/github/issues/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/issues)
 [![GitHub pull requests](https://img.shields.io/github/issues-pr/Breeding-Insight/Familia)](https://github.com/Breeding-Insight/Familia/pulls)
 [![GitHub Release](https://img.shields.io/github/v/release/Breeding-Insight/Familia?include_prereleases)](https://github.com/Breeding-Insight/Familia/releases/latest)
+<!-- badges: end -->
 
 <div align="center">
 <img width="250" height="250" alt="Familia_logo" src="https://github.com/user-attachments/assets/600951c0-65e5-4761-93a6-56d4c9a50ad0"/>
@@ -18,8 +22,11 @@ Familia is a Shiny web application developed by [Breeding Insight](https://breed
 to support pedigree validation and ancestry assessment of plant and animal
 populations. The app integrates Mendelian error analysis, parentage assignment,
 supervised ancestry estimation, and unsupervised ancestry inference to help
-breeding programs evaluate genomic relationships through an accessible,
-providing a web-based interface to [BIGpopA](https://github.com/Breeding-Insight/BIGpopA)
+breeding programs evaluate genomic relationships through an accessible
+web-based interface to [BIGpopA](https://github.com/Breeding-Insight/BIGpopA).
+
+Genotypes can be uploaded as dosage tables, VCF files or PLINK .ped files, and
+every tab has an **Example files** link that downloads a small simulated data set.
 
 ## Overview
 
@@ -52,15 +59,19 @@ range of plant and animal breeding programs.
 - Configurable error thresholds for trio and single-parent evaluations
 - Automatic classification of trios into Pass, Fail, Low Markers,
   No Genotype Data, Founders, and Missing Parents categories
-- Optional founders file to preserve known founder trios
+- Optional founders file (.txt, .csv or .tsv) to preserve known founder trios
 - Configurable ploidy: even ploidy uses the full Mendelian test, odd ploidy (e.g. triploid) a homozygosity-based check
+- Per-marker mismatch summary (Marker Summary) to spot problematic markers
+- Marker Trio Table with the status of every marker in every trio
 - Exportable corrected pedigree and per-status result tables
 
 ### Parentage Assignment
 - Support for best pair, best male parent, best female parent,
   and best match assignment methods
 - Configurable error threshold and minimum marker filters
-- Tie detection and self-match exclusion options
+- Tie detection (with an ambiguity count per progeny) and self-match exclusion options
+- Top N candidates per progeny
+- Fill in pedigree: fills missing parents of a 3-column pedigree (grayed out unless the progeny file is a pedigree); an optional founders file skips the founders
 - Configurable ploidy for diploid and polyploid data
 - Results classified as Pass, High Error, or Low Markers
 - Exportable full results and per-status tables
@@ -69,12 +80,14 @@ range of plant and animal breeding programs.
 - Supervised ancestry estimation based on reference population genotypes
 - Support for polyploid species via configurable ploidy parameter
 - Interactive ancestry bar plot with customizable color palettes
+- Assignment threshold (default 50%) labels samples below it as Undetermined
+- Model fit (R2) of each sample in the results
 - Automatic filtering of low-quality samples and markers
 - Exportable results as Excel files
 
 ### Unsupervised Ancestry Estimation (SNMF)
 - Unsupervised ancestry inference via LEA::snmf()
-- Supports VCF, VCF.gz, and LEA .geno input formats
+- Supports VCF, VCF.gz (diploid and polyploid, up to ploidy 8), and LEA .geno input formats
 - Configurable K range, repetitions, alpha, iterations, and tolerance
 - Cross-entropy-based automatic or manual K selection
 - Interactive Q-matrix ancestry plot with sort and label controls
@@ -116,21 +129,21 @@ Key R packages used by Familia include:
 * DT
 * vcfR
 * data.table
-* rlang
 * openxlsx
 * zip
-* LEA (required for SNMF-based ancestry inference)
+* LEA (Bioconductor, required for SNMF-based ancestry inference)
+
 ---
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.0.0. https://CRAN.R-project.org/package=Familia
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.2.0. https://CRAN.R-project.org/package=Familia
 
 You can obtain this citation (including a BibTeX entry) at any time by running `citation("Familia")` in R.
 
 #### Also cite:
 * **For sNMF:**
-    - [Frichot et.al](https://pmc.ncbi.nlm.nih.gov/articles/pmid/24496008/) for original methods
+    - [Frichot et.al](https://doi.org/10.1534/genetics.113.160572) for original methods
     - [Frichot et.al](https://doi.org/10.1111/2041-210X.12382) for LEA package
 * **BreedTools<sup>poly</sup>:**
     - [Funkhouser et al.](https://doi.org/10.2527/tas2016.0003) for original BreedTools methods  
@@ -138,7 +151,7 @@ You can obtain this citation (including a BibTeX entry) at any time by running `
 
 ## License
 Familia is released under the Apache License, Version 2.0.
-See the LICENSE file or https://www.apache.org/licenses/LICENSE-2.0 for details.
+See https://www.apache.org/licenses/LICENSE-2.0 for details.
 
 # Acknowledgments
 Familia is developed as part of the Breeding Insight initiative

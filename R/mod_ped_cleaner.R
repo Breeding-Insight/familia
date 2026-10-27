@@ -55,6 +55,7 @@ mod_ped_cleaner_ui <- function(id) {
             "Upload a pedigree file (.txt, .tsv, or .csv) with columns: id, male_parent, female_parent.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
+          example_files_ui(ns, example_files$ped_cleaner),
           shiny::fileInput(
             ns("ped_file"),
             "Upload Pedigree File",
@@ -185,7 +186,10 @@ mod_ped_cleaner_server <- function(id, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
     
     check_results <- shiny::reactiveVal(NULL)
-    
+
+    # Example files
+    output$download_examples <- example_download_handler(example_files$ped_cleaner)
+
     # Help button
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
@@ -223,8 +227,10 @@ mod_ped_cleaner_server <- function(id, parent_session) {
                             stringsAsFactors = FALSE, check.names = FALSE)
         }
         
+        # Column names are matched ignoring case, spaces and dots (as in BIGpopA)
         required_cols <- c("id", "male_parent", "female_parent")
-        missing_cols  <- setdiff(required_cols, colnames(ped_raw))
+        norm_cols     <- gsub("[ .-]+", "_", tolower(trimws(colnames(ped_raw))))
+        missing_cols  <- setdiff(required_cols, norm_cols)
         if (length(missing_cols) > 0) {
           stop(paste0(
             "Missing required column(s): ",
