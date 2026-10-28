@@ -8,60 +8,39 @@ import(openxlsx)
 import(shiny)
 import(shinyWidgets)
 import(shinydisconnect)
-importFrom(DT,
-  DTOutput,
-  renderDT
-)
 importFrom(bs4Dash,
   box,
-  bs4Badge,
   bs4DashNavbar,
   bs4DashPage,
   bs4DashSidebar,
   dashboardBody,
   dashboardFooter,
   menuItem,
-  menuSubItem,
-  renderValueBox,
   sidebarMenu,
   tabItem,
-  tabItems,
-  valueBox,
-  valueBoxOutput
+  tabItems
 )
 importFrom(curl,
   curl_fetch_memory,
   new_handle
 )
 importFrom(golem,
-  activate_js,
   add_resource_path,
   bundle_resources,
   favicon,
   with_golem_options
-)
-importFrom(graphics,
-  axis,
-  hist,
-  points
 )
 importFrom(httr,
   GET,
   content,
   status_code
 )
-importFrom(scales,comma_format)
 importFrom(shiny,
   NS,
   shinyApp,
   tagList
 )
 importFrom(shinydisconnect,disconnectMessage)
-importFrom(shinyjs,
-  disable,
-  enable,
-  useShinyjs
-)
 importFrom(utils,
   capture.output,
   packageVersion,
@@ -69,3 +48,4 @@ importFrom(utils,
   str,
   write.table
 )
+importFrom(vcfR,read.vcfR)

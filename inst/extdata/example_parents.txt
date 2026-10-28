@@ -1,0 +1,8 @@
+id	sex
+M1	M
+M1c	M
+M2	M
+M3	M
+F1	F
+F2	F
+F3	F

@@ -23,24 +23,42 @@ mod_find_parentage_ui <- function(id) {
             "Upload genotype, parents, and progeny files to assign parentage.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
-          shiny::fileInput(ns("genotypes_file"), "Genotypes File", accept = c(".txt", ".tsv", ".csv")),
+          example_files_ui(ns, example_files$find_parentage),
+          shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           shiny::fileInput(ns("parents_file"),   "Parents File",   accept = c(".txt", ".tsv", ".csv")),
-          shiny::fileInput(ns("progeny_file"),   "Progeny File",   accept = c(".txt", ".tsv", ".csv")),
+          shiny::fileInput(ns("progeny_file"),   "Progeny / Pedigree File",   accept = c(".txt", ".tsv", ".csv")),
           shiny::hr(),
           shiny::p("Parameters:", style = "color: #6c757d; font-size: 12px; margin-bottom: 5px;"),
-          shiny::selectInput(
+          shinyWidgets::pickerInput(
             ns("method"), "Method",
             choices = c(
-              "Best pair"    = "best_pair",
-              "Best male parent"         = "best_male_parent",
-              "Best female parent"       = "best_female_parent",
-              "Best match"  = "best_match"
+              "Best pair"          = "best_pair",
+              "Best male parent"   = "best_male_parent",
+              "Best female parent" = "best_female_parent",
+              "Best match"         = "best_match",
+              "Fill in pedigree"   = "fill_pedigree"
             ),
-            selected = "best_pair"
+            selected   = "best_pair",
+            choicesOpt = list(disabled = c(FALSE, FALSE, FALSE, FALSE, TRUE))
+          ),
+          shiny::p(
+            "The file can be a list of progeny (id column) or a pedigree (id, male_parent, female_parent). Fill in pedigree is available only for a pedigree.",
+            style = "color: #6c757d; font-size: 11px; margin-top: -8px; margin-bottom: 10px;"
+          ),
+          # Founders are only used by Fill in pedigree
+          shiny::conditionalPanel(
+            condition = "input.method == 'fill_pedigree'",
+            ns        = ns,
+            shiny::fileInput(ns("founders_file"), "Founders File (optional)", accept = c(".txt", ".tsv", ".csv")),
+            shiny::p(
+              "One id per line. Founders with both parents unknown are skipped; without this file they get a full parent search.",
+              style = "color: #6c757d; font-size: 11px; margin-top: -8px; margin-bottom: 10px;"
+            )
           ),
           shiny::numericInput(ns("error_threshold"), "Error Threshold (%)",   value = 5.0,  min = 0, max = 100, step = 0.1),
           shiny::numericInput(ns("min_markers"),     "Min Markers",           value = 10,   min = 1, step = 1),
           shiny::numericInput(ns("ploidy"),          "Ploidy",                value = 2,    min = 2, max = 20, step = 1),
+          shiny::numericInput(ns("top_n"),           "Top N matches",         value = 1,    min = 1, step = 1),
           shiny::checkboxInput(ns("show_ties"),            "Show ties",              value = TRUE),
           shiny::checkboxInput(ns("allow_parent_selfing"), "Allow parent selfing",   value = FALSE),
           shiny::checkboxInput(ns("exclude_self_match"),   "Exclude self-match",     value = TRUE),
@@ -80,9 +98,10 @@ mod_find_parentage_ui <- function(id) {
               shiny::fluidRow(
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
+                    <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Upload a parents file with an <code>id</code> column and an optional <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>).</li>
-                    <li>Upload a progeny file with an <code>id</code> column.</li>
+                    <li>Upload a progeny file with an <code>id</code> column, or a pedigree file with <code>id</code>, <code>male_parent</code> and <code>female_parent</code> columns (for example the corrected pedigree from Validate Pedigree).</li>
+                    <li>For <strong>Fill in pedigree</strong>, optionally upload a founders file (one id per line). Founders are skipped; without it, every individual with both parents unknown, founders included, gets a full parent search.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Select a method and set parameters, then click <strong>Run Parentage Assignment</strong>.</li>
                     <li>Results are split into:</li>
@@ -153,14 +172,18 @@ mod_find_parentage_ui <- function(id) {
               shiny::sliderInput(ns("plot_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
               shiny::sliderInput(ns("plot_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
               shiny::sliderInput(ns("plot_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              shiny::downloadButton(ns("download_parentage_plot"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = shiny::icon("floppy-disk"),
+              status  = "info",
+              icon    = shiny::icon("sliders"),
               width   = "300px",
-              label   = "Save",
-              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
+              label   = "Image Options",
+              tooltip = shinyWidgets::tooltipOptions(title = "File type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          shiny::div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            shiny::downloadButton(ns("download_parentage_plot"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -179,7 +202,11 @@ mod_find_parentage_server <- function(id, parent_session) {
     
     `%||%` <- function(x, y) if (is.null(x)) y else x
     parentage_results <- shiny::reactiveVal(NULL)
-    
+
+    # Example files
+    output$download_examples <- example_download_handler(example_files$find_parentage,
+                                                         "find_parentage_examples.zip")
+
     make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
         class = "card mb-1",
@@ -212,6 +239,31 @@ mod_find_parentage_server <- function(id, parent_session) {
     sanitize_id <- function(x) gsub("[^A-Za-z0-9]", "_", tolower(x))
     
     # Help button
+    # Enable "Fill in pedigree" only when the progeny file is a 3-column pedigree
+    method_choices <- c(
+      "Best pair"          = "best_pair",
+      "Best male parent"   = "best_male_parent",
+      "Best female parent" = "best_female_parent",
+      "Best match"         = "best_match",
+      "Fill in pedigree"   = "fill_pedigree"
+    )
+    shiny::observeEvent(input$progeny_file, {
+      hdr <- tryCatch({
+        ext <- tolower(tools::file_ext(input$progeny_file$name))
+        names(utils::read.table(input$progeny_file$datapath, header = TRUE, nrows = 1,
+                                sep = if (ext == "csv") "," else "\t",
+                                check.names = FALSE, stringsAsFactors = FALSE))
+      }, error = function(e) character(0))
+      hdr    <- gsub("[^a-z0-9]", "", tolower(hdr))
+      is_ped <- all(c("id", "maleparent", "femaleparent") %in% hdr)
+      shinyWidgets::updatePickerInput(
+        session, "method",
+        choices    = method_choices,
+        selected   = if (!is_ped && identical(input$method, "fill_pedigree")) "best_pair" else input$method,
+        choicesOpt = list(disabled = c(FALSE, FALSE, FALSE, FALSE, !is_ped))
+      )
+    }, ignoreNULL = TRUE)
+
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
@@ -249,29 +301,46 @@ mod_find_parentage_server <- function(id, parent_session) {
           }
         }
         
-        geno_raw    <- read_flex_ui(input$genotypes_file)
+        geno_raw    <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
         parents_raw <- read_flex_ui(input$parents_file)
         progeny_raw <- read_flex_ui(input$progeny_file)
-        
+
+        # Founders file: only used by Fill in pedigree
+        founders_path <- if (!is.null(input$founders_file)) input$founders_file$datapath else NULL
+        if (identical(input$method, "fill_pedigree") && is.null(founders_path)) {
+          shiny::showNotification(
+            "No founders file: every individual with both parents unknown, founders included, gets a full parent search.",
+            type = "warning", duration = 10
+          )
+        }
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_parentage",
           value = 35, status = "info",
           title = "Running parentage assignment..."
         )
         
-        report <- BIGpopA::find_parentage(
-          genotypes_file       = geno_raw,
-          parents_file         = parents_raw,
-          progeny_file         = progeny_raw,
-          method               = input$method,
-          min_markers          = as.integer(input$min_markers),
-          error_threshold      = as.numeric(input$error_threshold),
-          show_ties            = input$show_ties,
-          allow_parent_selfing = input$allow_parent_selfing,
-          exclude_self_match   = input$exclude_self_match,
-          ploidy               = as.integer(input$ploidy),
-          verbose              = FALSE,
-          plot_results         = TRUE
+        # BIGpopA also prints the plot: send it to a null device, so it does not
+        # open a plot window or write Rplots.pdf in the working directory
+        grDevices::pdf(NULL)
+        report <- tryCatch(
+          BIGpopA::find_parentage(
+            genotypes_file       = geno_raw,
+            parents_file         = parents_raw,
+            progeny_file         = progeny_raw,
+            method               = input$method,
+            min_markers          = as.integer(input$min_markers),
+            error_threshold      = as.numeric(input$error_threshold),
+            show_ties            = input$show_ties,
+            allow_parent_selfing = input$allow_parent_selfing,
+            exclude_self_match   = input$exclude_self_match,
+            ploidy               = as.integer(input$ploidy),
+            top_n                = as.integer(input$top_n),
+            founders_file        = founders_path,
+            verbose              = FALSE,
+            plot_results         = TRUE
+          ),
+          finally = grDevices::dev.off()
         )
         
         shinyWidgets::updateProgressBar(
@@ -411,13 +480,11 @@ mod_find_parentage_server <- function(id, parent_session) {
         width  <- as.numeric(input$plot_image_width  %||% 8)
         height <- as.numeric(input$plot_image_height %||% 5)
         dpi    <- as.numeric(input$plot_image_res    %||% 300)
-        if (ext %in% c("png", "jpeg", "tiff")) {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-        } else {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-        }
+        save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
       }
     )
+    # The button sits in a dropdown hidden at start-up; keep its link active
+    shiny::outputOptions(output, "download_parentage_plot", suspendWhenHidden = FALSE)
     
     # Unified data download
     output$download_parentage_all <- shiny::downloadHandler(

@@ -80,8 +80,10 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
     shiny::p(
       "The Validate Pedigree module checks recorded parent-offspring trios against genotype data
       using Mendelian error analysis. Each trio is classified as Pass, Fail, Low Markers,
-      No Genotype Data, Founders, or Missing Parents. A corrected pedigree and per-category
-      reports are bundled into a single .zip file for download.",
+      No Genotype Data, Founders, or Missing Parents. A Marker Summary table lists, for each
+      marker, the trios tested, the trios with a Mendelian mismatch and the mismatch %
+      (worst first), to help spot problematic markers. A Marker Trio Table gives the status of every marker in every trio (match, mismatch_male, mismatch_female, mismatch_both, mismatch_combination, or missing_* naming each individual without a call). A corrected pedigree (the parents identified as faulty set to 0) and per-category
+      reports are bundled into a single .zip file for download. To fill in missing or removed parents, run the Find Parentage tab with the Fill in pedigree method on the corrected pedigree. The Example files link in the Inputs box downloads a small data set (the pedigree is the corrected pedigree from the Pedigree Cleaner example).",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -96,9 +98,15 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
         with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload a Genotypes File</strong> - must include an <code>id</code> column followed
-        by marker columns coded as allele-B dosage (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>;
-        e.g. <code>0</code>, <code>1</code>, <code>2</code> for diploid)."
+        "<strong>Upload a Genotypes File</strong> - either a tab-separated .txt/.tsv or comma-separated
+        .csv with an <code>id</code> column followed by marker columns coded as allele-B dosage
+        (<code>0</code>, <code>1</code>, ..., <code>ploidy</code>; e.g. <code>0</code>, <code>1</code>,
+        <code>2</code> for diploid), or a VCF (<code>.vcf</code> / <code>.vcf.gz</code>). VCF
+        <code>GT</code> calls are converted to allele-B (ALT) dosages using the selected Ploidy;
+        multiallelic markers are dropped and calls with a different ploidy are set to missing.
+        PLINK <code>.ped</code> files are also accepted (diploid only, Ploidy = 2); no
+        <code>.map</code> is needed. Missing alleles are coded <code>0</code>, and the
+        alphabetically last allele at each marker is counted (e.g. <code>2</code> in 1/2 coding)."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Optionally upload a Founders File</strong> - a single column of founder IDs (.txt).
@@ -141,8 +149,10 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Single Parent Error Threshold (%)",
       body_content = shiny::tagList(
         shiny::p(
-          "The maximum allowable error rate (%) when only one parent is available for comparison
-          (e.g., when the other parent is coded as 0). Default: 2.0%.",
+          "When a trio fails or has too few markers, each parent is tested alone on markers where both
+          the parent and the progeny are homozygous. A parent whose homozygous mismatch rate is above
+          this value (or that has no homozygous markers to compare) is considered the faulty parent.
+          Default: 2.0%.",
           style = "margin-bottom: 0;"
         )
       )
@@ -154,7 +164,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Min Markers",
       body_content = shiny::tagList(
         shiny::p(
-          "Minimum number of informative markers required to validate a trio. Trios with fewer
+          "Minimum number of testable markers (progeny and both parents with a call) required to validate a trio. Trios with fewer
           markers than this value are placed in the Low Markers category. Default: 10.",
           style = "margin-bottom: 0;"
         )
@@ -211,7 +221,11 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "The Mendelian error rate exceeds the trio error threshold, suggesting the recorded
-          parentage is incorrect or that significant genotyping errors exist.",
+          parentage is incorrect or that significant genotyping errors exist. The
+          <code>recommended_correction</code> column names the parent(s) to remove: <code>remove_male_parent</code>,
+          <code>remove_female_parent</code>, <code>remove_both</code>, or <code>unresolved</code> when neither
+          parent fails the single-parent check (for example an individual recorded as its own parent),
+          in which case the pedigree is left unchanged for manual review.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -225,8 +239,10 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Low Markers - insufficient markers for reliable validation",
       body_content = shiny::tagList(
         shiny::p(
-          "Fewer informative markers than the Min Markers threshold were available for this trio.
-          The result is inconclusive and flagged for review.",
+          "Fewer testable markers than the Min Markers threshold were available for this trio.
+          The result is inconclusive and flagged for review. The recommended correction carries the
+          prefix <code>low_markers_</code> (for example <code>low_markers_remove_female_parent</code>) and is
+          applied to the corrected pedigree like the plain decision.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -271,13 +287,13 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Missing Parents - one or both parents coded as 0",
       body_content = shiny::tagList(
         shiny::p(
-          "One or both parents are recorded as 0 (unknown) in the pedigree. If genotype data
-          is available for the known parent, the single-parent error threshold is applied;
-          otherwise the trio cannot be fully validated.",
+          "One or both parents are recorded as 0 (unknown) in the pedigree. These trios are not
+          tested and no error rate is computed. Use Find Parentage with the Fill in pedigree
+          method to search for the missing parent.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
-        trio_table(trio_row("A5", "0", "C5", "1.3%", "Missing Parents", bg = "#fff3cd"))
+        trio_table(trio_row("A5", "0", "C5", "NA", "Missing Parents", bg = "#fff3cd"))
       )
     ),
     
@@ -293,7 +309,8 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       shiny::tags$li(shiny::HTML("One .txt report per result category (only included if records exist):
         <code>pass.txt</code>, <code>fail.txt</code>, <code>low_markers.txt</code>,
         <code>no_genotype_data.txt</code>, <code>founders.txt</code>,
-        <code>missing_parents.txt</code>."))
+        <code>missing_parents.txt</code>.")),
+      shiny::tags$li(shiny::HTML("<code>marker_summary.txt</code> - per-marker trios tested, mismatches and mismatch %."))
     )
   )
 }
