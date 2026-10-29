@@ -50,18 +50,16 @@ app_server <- function(input, output, session) {
     ))
   })
   
-  get_latest_github_commit <- function(repo, owner) {
+  # Version of the latest GitHub release, or NULL if it cannot be retrieved
+  get_latest_github_release <- function(repo, owner) {
     url      <- paste0("https://api.github.com/repos/", owner, "/", repo, "/releases/latest")
-    response <- GET(url)
-    content  <- content(response, "parsed")
-    if (status_code(response) == 200) {
-      tag_name       <- content$tag_name
-      clean_tag_name <- sub("-.*", "", tag_name)
-      clean_tag_name <- sub("v", "", clean_tag_name)
-      return(clean_tag_name)
-    } else {
-      return(NULL)
-    }
+    response <- tryCatch(GET(url, httr::timeout(10)), error = function(e) NULL)
+    if (is.null(response) || status_code(response) != 200) return(NULL)
+    tag_name <- content(response, "parsed")$tag_name
+    if (is.null(tag_name)) return(NULL)
+    clean_tag_name <- sub("-.*", "", tag_name)          # drop suffixes such as "-beta"
+    clean_tag_name <- sub("^[vV]", "", clean_tag_name)  # drop the leading "v"
+    clean_tag_name
   }
   
   is_internet_connected <- function() {
@@ -86,16 +84,28 @@ app_server <- function(input, output, session) {
       return()
     }
     
-    package_name <- "BIGapp"
-    repo_name    <- "BIGapp"
+    package_name <- "Familia"
+    repo_name    <- "Familia"
     repo_owner   <- "Breeding-Insight"
-    
+
     installed_version <- as.character(packageVersion(package_name))
-    latest_commit     <- get_latest_github_commit(repo_name, repo_owner)
-    
-    if (latest_commit > installed_version) {
+    latest_version    <- get_latest_github_release(repo_name, repo_owner)
+
+    # Compare as versions, not text ("2.10.0" is newer than "2.9.0")
+    is_newer <- !is.null(latest_version) && isTRUE(tryCatch(
+      package_version(latest_version) > package_version(installed_version),
+      error = function(e) FALSE
+    ))
+
+    if (is.null(latest_version)) {
       message_html <- paste(
         "Installed version:", installed_version, "<br>",
+        "The latest release could not be retrieved from GitHub. Please try again later."
+      )
+    } else if (is_newer) {
+      message_html <- paste(
+        "Installed version:", installed_version, "<br>",
+        "Latest version:", latest_version, "<br>",
         "<span>A new version is available on GitHub!</span><br>",
         "<span style='color: red;'>Please update your package.</span>"
       )
@@ -105,9 +115,9 @@ app_server <- function(input, output, session) {
         "Your package is up-to-date!"
       )
     }
-    
+
     showModal(modalDialog(
-      title     = "BIGapp Updates",
+      title     = "Familia Updates",
       size      = "m",
       easyClose = TRUE,
       footer    = tagList(modalButton("Close")),

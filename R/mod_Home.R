@@ -6,9 +6,7 @@
 #'
 #' @noRd
 #'
-#' @importFrom shinyjs enable disable useShinyjs
 #' @importFrom shiny NS tagList
-#' @importFrom bs4Dash renderValueBox valueBox
 #'
 #'
 mod_Home_ui <- function(id){
@@ -114,18 +112,5 @@ mod_Home_ui <- function(id){
   )
 }
 
-#' Home Server Functions
-#'
-#'
-#' @noRd
-mod_Home_server <- function(input, output, session, parent_session){
-
-  ns <- session$ns
-
-}
-
 ## To be copied in the UI
 # mod_Home_ui("Home_1")
-
-## To be copied in the server
-# mod_Home_server("Home_1")

@@ -23,9 +23,10 @@ mod_validate_ped_ui <- function(id) {
             "Upload a pedigree file and a genotypes file to validate trios using Mendelian error analysis.",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 15px;"
           ),
+          example_files_ui(ns, example_files$validate_ped),
           shiny::fileInput(ns("pedigree_file"),  "Pedigree File",  accept = c(".txt", ".tsv", ".csv")),
-          shiny::fileInput(ns("genotypes_file"), "Genotypes File", accept = c(".txt", ".tsv", ".csv")),
-          shiny::fileInput(ns("founders_file"),  "Founders File",    accept = c(".txt")),
+          shiny::fileInput(ns("genotypes_file"), "Genotypes File (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
+          shiny::fileInput(ns("founders_file"),  "Founders File (optional)", accept = c(".txt", ".tsv", ".csv")),
           shiny::hr(),
           shiny::p("Parameters:", style = "color: #6c757d; font-size: 12px; margin-bottom: 5px;"),
           shiny::numericInput(ns("trio_error_threshold"),
@@ -77,8 +78,8 @@ mod_validate_ped_ui <- function(id) {
                 shiny::column(12, shiny::wellPanel(shiny::HTML('
                   <ul>
                     <li>Upload a pedigree file with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
-                    <li>Upload a genotypes file with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid).</li>
-                    <li>Optionally upload a founders file (single column of founder IDs) to preserve founder trios.</li>
+                    <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
+                    <li>Optionally upload a founders file (one id per line, no header). Individuals with both parents <code>0</code> that are listed in it are reported as Founders instead of Missing Parents.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
                     <li>Results are split into:</li>
@@ -152,14 +153,18 @@ mod_validate_ped_ui <- function(id) {
               shiny::sliderInput(ns("plot_image_res"),    "Resolution", value = 300, min = 50,  max = 1000, step = 50),
               shiny::sliderInput(ns("plot_image_width"),  "Width",      value = 8,   min = 1,   max = 20,   step = 0.5),
               shiny::sliderInput(ns("plot_image_height"), "Height",     value = 5,   min = 1,   max = 20,   step = 0.5),
-              shiny::downloadButton(ns("download_validate_plot"), "Save Image"),
               circle  = FALSE,
-              status  = "danger",
-              icon    = shiny::icon("floppy-disk"),
+              status  = "info",
+              icon    = shiny::icon("sliders"),
               width   = "300px",
-              label   = "Save",
-              tooltip = shinyWidgets::tooltipOptions(title = "Click to see inputs!")
+              label   = "Image Options",
+              tooltip = shinyWidgets::tooltipOptions(title = "File type, resolution and size")
             )
+          ),
+          # Download button kept outside the dropdown so the link is always active
+          shiny::div(
+            style = "display:inline-block; float:left; margin-left: 8px;",
+            shiny::downloadButton(ns("download_validate_plot"), "Save Image", class = "btn-danger")
           )
         )
       )
@@ -180,7 +185,11 @@ mod_validate_ped_server <- function(id, parent_session) {
     parentage_results <- shiny::reactiveVal(NULL)
     
     validate_results <- shiny::reactiveVal(NULL)
-    
+
+    # Example files
+    output$download_examples <- example_download_handler(example_files$validate_ped,
+                                                         "validate_pedigree_examples.zip")
+
     make_collapse_panel <- function(panel_id, icon_name, label, body_content) {
       shiny::tags$div(
         class = "card mb-1",
@@ -239,8 +248,7 @@ mod_validate_ped_server <- function(id, parent_session) {
         )
         
         ped_ext  <- tolower(tools::file_ext(input$pedigree_file$name))
-        geno_ext <- tolower(tools::file_ext(input$genotypes_file$name))
-        
+
         ped_raw <- if (ped_ext == "csv") {
           utils::read.csv(input$pedigree_file$datapath,  header = TRUE,
                           stringsAsFactors = FALSE, check.names = FALSE)
@@ -249,13 +257,7 @@ mod_validate_ped_server <- function(id, parent_session) {
                             stringsAsFactors = FALSE, check.names = FALSE)
         }
         
-        geno_raw <- if (geno_ext == "csv") {
-          utils::read.csv(input$genotypes_file$datapath, header = TRUE,
-                          stringsAsFactors = FALSE, check.names = FALSE)
-        } else {
-          utils::read.table(input$genotypes_file$datapath, header = TRUE, sep = "\t",
-                            stringsAsFactors = FALSE, check.names = FALSE)
-        }
+        geno_raw <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
         
         founders_path <- if (!is.null(input$founders_file)) input$founders_file$datapath else NULL
         
@@ -265,16 +267,23 @@ mod_validate_ped_server <- function(id, parent_session) {
           title = "Evaluating trios..."
         )
         
-        report <- BIGpopA::validate_pedigree(
-          pedigree_file                 = ped_raw,
-          genotypes_file                = geno_raw,
-          founders_file                 = founders_path,
-          trio_error_threshold          = as.numeric(input$trio_error_threshold),
-          min_markers                   = as.integer(input$min_markers),
-          single_parent_error_threshold = as.numeric(input$single_parent_error_threshold),
-          ploidy                        = as.integer(input$ploidy),
-          verbose                       = FALSE,
-          plot_results                  = TRUE
+        # BIGpopA also prints the plot: send it to a null device, so it does not
+        # open a plot window or write Rplots.pdf in the working directory
+        grDevices::pdf(NULL)
+        report <- tryCatch(
+          BIGpopA::validate_pedigree(
+            pedigree_file                 = ped_raw,
+            genotypes_file                = geno_raw,
+            founders_file                 = founders_path,
+            trio_error_threshold          = as.numeric(input$trio_error_threshold),
+            min_markers                   = as.integer(input$min_markers),
+            single_parent_error_threshold = as.numeric(input$single_parent_error_threshold),
+            ploidy                        = as.integer(input$ploidy),
+            verbose                       = FALSE,
+            plot_results                  = TRUE,
+            marker_trio_table             = TRUE
+          ),
+          finally = grDevices::dev.off()
         )
         
         shinyWidgets::updateProgressBar(
@@ -389,6 +398,8 @@ mod_validate_ped_server <- function(id, parent_session) {
       render_if("No Genotype Data",  report$no_genotype_data)
       render_if("Founders",          report$founders)
       render_if("Missing Parents",   report$missing_parents)
+      render_if("Marker Summary",    report$marker_summary)
+      render_if("Marker Trio Table", report$marker_trio_table)
       
       shiny::tagList(
         shiny::h5(
@@ -400,7 +411,9 @@ mod_validate_ped_server <- function(id, parent_session) {
         make_section("Low Markers",      "triangle-exclamation", report$low_markers, "#856404"),
         make_section("No Genotype Data", "database",     report$no_genotype_data, "#6c757d"),
         make_section("Founders",         "seedling",     report$founders,         "#0c5460"),
-        make_section("Missing Parents",  "user-slash",   report$missing_parents,  "#856404")
+        make_section("Missing Parents",  "user-slash",   report$missing_parents,  "#856404"),
+        make_section("Marker Summary",   "table",        report$marker_summary,   "#0c5460"),
+        make_section("Marker Trio Table", "table-cells", report$marker_trio_table, "#0c5460")
       )
     })
     
@@ -426,13 +439,11 @@ mod_validate_ped_server <- function(id, parent_session) {
         width  <- as.numeric(input$plot_image_width  %||% 8)
         height <- as.numeric(input$plot_image_height %||% 5)
         dpi    <- as.numeric(input$plot_image_res    %||% 300)
-        if (ext %in% c("png", "jpeg", "tiff")) {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in", dpi = dpi)
-        } else {
-          ggplot2::ggsave(filename = file, plot = p, width = width, height = height, units = "in")
-        }
+        save_plot_file(p, file, ext, width = width, height = height, dpi = dpi)
       }
     )
+    # The button sits in a dropdown hidden at start-up; keep its link active
+    shiny::outputOptions(output, "download_validate_plot", suspendWhenHidden = FALSE)
     
     # Unified data download
     output$download_validate_all <- shiny::downloadHandler(
@@ -467,7 +478,9 @@ mod_validate_ped_server <- function(id, parent_session) {
           low_markers      = report$low_markers,
           no_genotype_data = report$no_genotype_data,
           founders         = report$founders,
-          missing_parents  = report$missing_parents
+          missing_parents  = report$missing_parents,
+          marker_summary   = report$marker_summary,
+          marker_trio_table = report$marker_trio_table
         )
         for (nm in names(sections)) {
           df <- sections[[nm]]

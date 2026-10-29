@@ -3,7 +3,7 @@
 #' @param request Internal parameter for `{shiny}`.
 #'     DO NOT REMOVE.
 #' @import shiny
-#' @importFrom bs4Dash bs4Badge bs4DashSidebar bs4DashNavbar bs4DashPage sidebarMenu menuItem menuSubItem dashboardBody tabItems tabItem box dashboardFooter
+#' @importFrom bs4Dash bs4DashSidebar bs4DashNavbar bs4DashPage sidebarMenu menuItem dashboardBody tabItems tabItem box dashboardFooter
 #' @importFrom shinydisconnect disconnectMessage
 #' @import shinyWidgets
 #'
@@ -19,7 +19,7 @@ app_ui <- function(request) {
       skin = "black",
       bs4DashNavbar(
         title = tagList(
-          tags$img(src = 'www/Familia_logo.png', height = '40', width = '40'),
+          tags$img(src = 'www/familia_logo.png', height = '40', width = '40'),   # file name is lower case (case-sensitive on Linux)
         ),
         rightUi = tags$li(
           class = "dropdown",
@@ -139,7 +139,7 @@ app_ui <- function(request) {
 #' Add external Resources to the Application
 #'
 #' @import shiny
-#' @importFrom golem add_resource_path activate_js favicon bundle_resources
+#' @importFrom golem add_resource_path favicon bundle_resources
 #' @noRd
 golem_add_external_resources <- function() {
   add_resource_path(

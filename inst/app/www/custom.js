@@ -34,12 +34,4 @@ $(document).ready(function() {
     childList: true,
     subtree: true
   });
-
-  // Your existing tab script
-  $('#cnv_1-sample_select_tabs li.active > a').addClass('active');
-
-  $(document).on('shown.bs.tab', '#cnv_1-sample_select_tabs a[data-toggle="tab"]', function(e) {
-    $('#cnv_1-sample_select_tabs a[data-toggle="tab"]').removeClass('active');
-    $(e.target).addClass('active');
-  });
 });
