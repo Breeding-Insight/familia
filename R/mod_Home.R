@@ -82,7 +82,7 @@ mod_Home_ui <- function(id){
                         style = "text-decoration: none; color: inherit;"
                       ),
                       shiny::tags$a(
-                       # href = "https://scribehow.com/viewer/...",
+                        href = "https://breeding-insight.github.io/familia/",
                         target = "_blank",
                         bs4Dash::valueBox(
                           value = NULL,
