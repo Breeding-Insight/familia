@@ -51,7 +51,7 @@ Familia does not call dosages. Run your genotype calling pipeline first (we reco
 | Parents | `id` and optional `sex` (`M`, `F`, `A`) | Find Parentage |
 | Progeny / pedigree | `id` column, or a pedigree for *Fill in pedigree* | Find Parentage |
 
-Each tab has an **Example files** link in its Inputs box that downloads a small simulated data set for that tab. The same files are installed with the package:
+Each tab has an **Example files** link in its Inputs box that downloads a small simulated data set for that tab, and a **Data Overview** tab that counts what was uploaded before anything is run. The same files are installed with the package:
 
 ```{r}
 list.files(system.file("extdata", package = "Familia"))
