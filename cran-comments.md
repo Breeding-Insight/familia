@@ -2,8 +2,7 @@
 
 0 errors | 0 warnings | 0 notes
 
-* This is an update to Familia 2.0.0, the version on CRAN. Version 2.1.0 was
-  not released on CRAN, so its changes are part of this update.
+* This is an update to Familia 2.2.0, the version on CRAN.
 
 ## Dependencies
 
@@ -11,6 +10,31 @@ This version requires 'BIGpopA' (>= 2.2.0), available on CRAN since 2026-10-12.
 'vcfR' stays in Imports: 'BIGpopA' reads VCF files with it but only suggests it.
 'LEA' (Bioconductor) is in Suggests and is only needed by the SNMF tab, which
 checks that it is installed.
+
+## AI assistance
+
+This version was developed with AI assistance; all code has been reviewed by a
+human.
+
+# Familia 2.3.0
+* Incorporated changes from user testing feedback.
+* Pedigree Cleaner: a Keep box in the Conflicting Trios table keeps one row of
+  an id; the check runs again without the other rows of that id.
+* Pedigree Cleaner, Validate Pedigree and Find Parentage: the results download
+  as one Excel file with every record and its issue and the run settings; the
+  pedigree for the next tab is a separate download.
+* Every analysis has a Data Overview tab with summary tiles that count what was
+  uploaded.
+* Validate Pedigree and Find Parentage: hovering over a bar of the Mendelian
+  error plot gives its count, and clicking it lists its trios or progeny.
+* Tables have a filter box under each column and highlight matches.
+* Plots show a spinner while they are drawn.
+* Spaces at the start or end of a cell of an uploaded table are removed.
+* BreedTools: the Reference IDs file can be a .csv, and IDs that are not in the
+  reference genotypes give a clear message.
+* SNMF: a banner explains how to install 'LEA' when it is missing.
+* Clearer wording of the options and tables.
+* Added tests of every tab.
 
 # Familia 2.2.0
 * Every tab has an "Example files" link that downloads a small simulated data

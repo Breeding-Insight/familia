@@ -26,7 +26,9 @@ breeding programs evaluate genomic relationships through an accessible
 web-based interface to [BIGpopA](https://github.com/Breeding-Insight/BIGpopA).
 
 Genotypes can be uploaded as dosage tables, VCF files or PLINK .ped files, and
-every tab has an **Example files** link that downloads a small simulated data set.
+every analysis has an **Example files** link that downloads a small simulated data set.
+Each analysis has a **Data Overview** tab that counts what was uploaded, and every
+results table has a filter box under each column header.
 
 ## Overview
 
@@ -51,8 +53,8 @@ range of plant and animal breeding programs.
 - Detection of exact duplicate records, conflicting trios, and inconsistent sex roles
 - Automatic addition of missing parents with unknown parent codes
 - Detection of cycles and circular dependencies in pedigree relationships
-- Configurable correction options with interactive review of flagged records
-- Exportable corrected pedigree and per-issue result tables
+- Options to set conflicting parents and inconsistent sex roles to missing, or keep one row of a conflicting trio from the table
+- One Excel file with every record, its issue and the action taken, plus the cleaned pedigree for the next step
 
 ### Pedigree Validation
 - Mendelian error analysis across trios using marker genotype data
@@ -63,7 +65,8 @@ range of plant and animal breeding programs.
 - Configurable ploidy: even ploidy uses the full Mendelian test, odd ploidy (e.g. triploid) a homozygosity-based check
 - Per-marker mismatch summary (Marker Summary) to spot problematic markers
 - Marker Trio Table with the status of every marker in every trio
-- Exportable corrected pedigree and per-status result tables
+- Clickable Mendelian error plot: click a bar to list its trios
+- One Excel file with every trio and its issue, plus the validated pedigree
 
 ### Parentage Assignment
 - Support for best pair, best male parent, best female parent,
@@ -74,7 +77,7 @@ range of plant and animal breeding programs.
 - Fill in pedigree: fills missing parents of a 3-column pedigree (grayed out unless the progeny file is a pedigree); an optional founders file skips the founders
 - Configurable ploidy for diploid and polyploid data
 - Results classified as Pass, High Error, or Low Markers
-- Exportable full results and per-status tables
+- One Excel file with every progeny and its issue
 
 ### Line/Breed Composition Estimation (PolyBreedTools)
 - Supervised ancestry estimation based on reference population genotypes
@@ -137,7 +140,7 @@ Key R packages used by Familia include:
 ## Citation
 
 If you use Familia in research, please cite it as:
-Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.2.0. https://CRAN.R-project.org/package=Familia
+Chinchilla-Vargas, J., Sandercock, A. M., & Breeding Insight Team (2026). Familia: 'shiny' Application for Population Structure and Ancestry Assessments. R package version 2.3.0. https://CRAN.R-project.org/package=Familia
 
 You can obtain this citation (including a BibTeX entry) at any time by running `citation("Familia")` in R.
 

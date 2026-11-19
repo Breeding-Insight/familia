@@ -75,7 +75,9 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       shiny::tags$code("LEA::snmf()"),
       ". It estimates Q-matrices (ancestry proportions per individual per cluster) across
        a range of K values, optionally using cross-entropy to identify the best K. The Example
-       file link in the Inputs box downloads a small tetraploid VCF (set Ploidy to 4).",
+       file link downloads example_snmf.vcf, which is tetraploid (Ploidy 4). For your own file,
+       set Ploidy to match it. SNMF needs the LEA package from Bioconductor:
+       install.packages(\"BiocManager\"); BiocManager::install(\"LEA\").",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -108,7 +110,9 @@ help_content_SNMF <- function(collapse_fn = NULL, id_prefix = "") {
       )),
       shiny::tags$li(shiny::HTML("<strong>Run SNMF</strong> - executes the analysis.")),
       shiny::tags$li(shiny::HTML(
-        "<strong>Review</strong> the Cross-Entropy, Ancestry Plot, Q Matrix, and Logs tabs."
+        "<strong>Review</strong> the Cross-Entropy, Ancestry Plot, Q Matrix, and Logs tabs.
+         A table's <em>Search</em> box finds the text in any column, ignoring case; to search one
+         column, type in the box under its header."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Export</strong> the Q matrix as <code>.csv</code> or cross-entropy as <code>.csv</code>."

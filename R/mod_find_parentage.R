@@ -8,7 +8,7 @@ mod_find_parentage_ui <- function(id) {
   shiny::tagList(
     shinyjs::useShinyjs(),
     shiny::fluidRow(
-      
+
       # Column 1: Inputs
       shiny::column(
         width = 3,
@@ -66,7 +66,7 @@ mod_find_parentage_ui <- function(id) {
           shiny::actionButton(ns("run_parentage"), "Run Parentage Assignment"),
           shiny::hr(),
           shinyjs::disabled(
-            shiny::downloadButton(ns("download_parentage_all"), "Download Results")
+            shiny::downloadButton(ns("download_parentage_all"), "Download Results (Excel)")
           ),
           shiny::hr(),
           shiny::div(
@@ -79,7 +79,7 @@ mod_find_parentage_ui <- function(id) {
           )
         )
       ),
-      
+
       # Column 2: Results
       shiny::column(
         width = 6,
@@ -100,8 +100,9 @@ mod_find_parentage_ui <- function(id) {
                   <ul>
                     <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Upload a parents file with an <code>id</code> column and an optional <code>sex</code> column (<code>M</code>, <code>F</code>, or <code>A</code>).</li>
-                    <li>Upload a progeny file with an <code>id</code> column, or a pedigree file with <code>id</code>, <code>male_parent</code> and <code>female_parent</code> columns (for example the corrected pedigree from Validate Pedigree).</li>
+                    <li>Upload a progeny file with an <code>id</code> column, or a pedigree file with <code>id</code>, <code>male_parent</code> and <code>female_parent</code> columns (for example the validated pedigree from Validate Pedigree).</li>
                     <li>For <strong>Fill in pedigree</strong>, optionally upload a founders file (one id per line). Founders are skipped; without it, every individual with both parents unknown, founders included, gets a full parent search.</li>
+                    <li>The <strong>Data Overview</strong> tab opens when a file is uploaded and counts the candidate parents, the progeny and the markers.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Select a method and set parameters, then click <strong>Run Parentage Assignment</strong>.</li>
                     <li>Results are split into:</li>
@@ -110,11 +111,17 @@ mod_find_parentage_ui <- function(id) {
                       <li><strong>High Error</strong> - progeny exceeding the error threshold.</li>
                       <li><strong>Low Markers</strong> - progeny with insufficient markers.</li>
                     </ul>
-                    <li>Review results in the Issue Tables tab, then export as a .zip file.</li>
+                    <li>In the <strong>Mendelian Error Plot</strong>, click a bar to list its progeny under the plot.</li>
+                    <li>Review results in the Issue Tables tab. <strong>Download Results</strong> gives one Excel file with every progeny and its issue, one sheet per table and the run settings.</li>
                   </ul>
                 ')))
               ),
               style = "overflow-y: auto; height: 550px"
+            ),
+            shiny::tabPanel(
+              "Data Overview",
+              shiny::uiOutput(ns("dashboard")),   # summary tiles, filled in when the files are uploaded
+              style = "overflow-y: auto; height: 550px; padding: 10px;"
             ),
             shiny::tabPanel(
               "Issue Tables",
@@ -123,13 +130,17 @@ mod_find_parentage_ui <- function(id) {
             ),
             shiny::tabPanel(
               "Mendelian Error Plot",
-              shiny::plotOutput(ns("error_plot"), height = "450px"),
+              shiny::plotOutput(ns("error_plot"), height = "450px",
+                                click = ns("error_plot_click"),
+                                hover = shiny::hoverOpts(ns("error_plot_hover"), delay = 150, delayType = "debounce")),
+              shiny::div(class = "plot-hint", shiny::textOutput(ns("error_plot_hint"), inline = TRUE)),
+              shiny::uiOutput(ns("error_plot_bar_ui")),
               style = "overflow-y: auto; height: 550px; padding: 10px;"
             )
           )
         )
       ),
-      
+
       # Column 3: Status + Summary
       shiny::column(
         width = 3,
@@ -199,9 +210,10 @@ mod_find_parentage_ui <- function(id) {
 #' @noRd
 mod_find_parentage_server <- function(id, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
-    
+
     `%||%` <- function(x, y) if (is.null(x)) y else x
     parentage_results <- shiny::reactiveVal(NULL)
+    run_settings      <- shiny::reactiveVal(NULL)   # inputs of the run, for the Settings sheet
 
     # Example files
     output$download_examples <- example_download_handler(example_files$find_parentage,
@@ -235,10 +247,24 @@ mod_find_parentage_server <- function(id, parent_session) {
         )
       )
     }
-    
+
     sanitize_id <- function(x) gsub("[^A-Za-z0-9]", "_", tolower(x))
-    
-    # Help button
+
+    # Uploaded files, read once for the summary tiles and the run. Genotypes
+    # are read without the Ploidy check, which is done when the run starts.
+    geno_input <- shiny::reactive({
+      shiny::req(input$genotypes_file)
+      read_genotype_upload(input$genotypes_file, ploidy = NULL)
+    })
+    parents_input <- shiny::reactive({
+      shiny::req(input$parents_file)
+      read_table_upload(input$parents_file)
+    })
+    progeny_input <- shiny::reactive({
+      shiny::req(input$progeny_file)
+      read_table_upload(input$progeny_file)
+    })
+
     # Enable "Fill in pedigree" only when the progeny file is a 3-column pedigree
     method_choices <- c(
       "Best pair"          = "best_pair",
@@ -248,12 +274,7 @@ mod_find_parentage_server <- function(id, parent_session) {
       "Fill in pedigree"   = "fill_pedigree"
     )
     shiny::observeEvent(input$progeny_file, {
-      hdr <- tryCatch({
-        ext <- tolower(tools::file_ext(input$progeny_file$name))
-        names(utils::read.table(input$progeny_file$datapath, header = TRUE, nrows = 1,
-                                sep = if (ext == "csv") "," else "\t",
-                                check.names = FALSE, stringsAsFactors = FALSE))
-      }, error = function(e) character(0))
+      hdr    <- tryCatch(names(progeny_input()), error = function(e) character(0))
       hdr    <- gsub("[^a-z0-9]", "", tolower(hdr))
       is_ped <- all(c("id", "maleparent", "femaleparent") %in% hdr)
       shinyWidgets::updatePickerInput(
@@ -264,6 +285,7 @@ mod_find_parentage_server <- function(id, parent_session) {
       )
     }, ignoreNULL = TRUE)
 
+    # Help button
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
         shiny::modalDialog(
@@ -275,35 +297,71 @@ mod_find_parentage_server <- function(id, parent_session) {
         )
       )
     })
-    
+
+    # Summary tiles (Data Overview tab)
+    output$dashboard <- shiny::renderUI({
+      tiles <- list("Candidate parents" = NA, "Male (M)" = NA, "Female (F)" = NA,
+                    "Either sex (A)" = NA, "Progeny" = NA, "Genotyped individuals" = NA,
+                    "Markers" = NA)
+      notes <- character(0)
+      if (!is.null(input$parents_file)) {
+        parents <- tryCatch(parents_input(), error = function(e) e)
+        if (inherits(parents, "error")) {
+          notes <- c(notes, paste("Could not read the parents file:", conditionMessage(parents)))
+        } else {
+          sex_col <- names(parents)[tolower(trimws(names(parents))) == "sex"]
+          sex     <- if (length(sex_col) > 0) toupper(trimws(parents[[sex_col[1]]])) else rep("A", nrow(parents))
+          tiles[["Candidate parents"]] <- nrow(parents)
+          tiles[["Male (M)"]]          <- sum(sex %in% "M")
+          tiles[["Female (F)"]]        <- sum(sex %in% "F")
+          tiles[["Either sex (A)"]]    <- sum(!sex %in% c("M", "F"))
+        }
+      }
+      if (!is.null(input$progeny_file)) {
+        progeny <- tryCatch(progeny_input(), error = function(e) e)
+        if (inherits(progeny, "error")) {
+          notes <- c(notes, paste("Could not read the progeny file:", conditionMessage(progeny)))
+        } else {
+          tiles[["Progeny"]] <- nrow(progeny)
+        }
+      }
+      if (!is.null(input$genotypes_file)) {
+        geno <- tryCatch(geno_input(), error = function(e) e)
+        if (inherits(geno, "error")) {
+          notes <- c(notes, paste("Could not read the genotypes file:", conditionMessage(geno)))
+        } else {
+          gc <- genotype_counts(geno)
+          tiles[["Genotyped individuals"]] <- length(gc$ids)
+          tiles[["Markers"]]               <- gc$markers
+        }
+      }
+      summary_strip(tiles, if (length(notes) > 0) paste(notes, collapse = " "))
+    })
+
+    # Uploading the genotypes, parents or progeny opens the Data Overview tab
+    # (NULL until a file is uploaded, so nothing happens at start-up)
+    shiny::observeEvent(c(input$genotypes_file$datapath, input$parents_file$datapath,
+                          input$progeny_file$datapath), {
+      shiny::updateTabsetPanel(session, "parentage_results_tabs", selected = "Data Overview")
+    })
+
     # Run parentage assignment
     shiny::observeEvent(input$run_parentage, {
       shiny::req(input$genotypes_file, input$parents_file, input$progeny_file)
       parentage_results(NULL)
       shinyjs::disable("download_parentage_all")
-      
+
       tryCatch({
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_parentage",
           value = 10, status = "info",
           title = "Reading input files..."
         )
-        
-        read_flex_ui <- function(file_input) {
-          ext <- tolower(tools::file_ext(file_input$name))
-          if (ext == "csv") {
-            utils::read.csv(file_input$datapath, header = TRUE,
-                            stringsAsFactors = FALSE, check.names = FALSE)
-          } else {
-            utils::read.table(file_input$datapath, header = TRUE, sep = "\t",
-                              stringsAsFactors = FALSE, check.names = FALSE,
-                              comment.char = "", quote = "")
-          }
-        }
-        
-        geno_raw    <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
-        parents_raw <- read_flex_ui(input$parents_file)
-        progeny_raw <- read_flex_ui(input$progeny_file)
+
+        geno_raw    <- geno_input()
+        check_upload_ploidy(geno_raw, input$genotypes_file, input$ploidy)
+        parents_raw <- parents_input()
+        progeny_raw <- progeny_input()
 
         # Founders file: only used by Fill in pedigree
         founders_path <- if (!is.null(input$founders_file)) input$founders_file$datapath else NULL
@@ -319,7 +377,7 @@ mod_find_parentage_server <- function(id, parent_session) {
           value = 35, status = "info",
           title = "Running parentage assignment..."
         )
-        
+
         # BIGpopA also prints the plot: send it to a null device, so it does not
         # open a plot window or write Rplots.pdf in the working directory
         grDevices::pdf(NULL)
@@ -342,15 +400,29 @@ mod_find_parentage_server <- function(id, parent_session) {
           ),
           finally = grDevices::dev.off()
         )
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_parentage",
           value = 85, status = "info",
           title = "Compiling results..."
         )
-        
+
+        run_settings(list(
+          genotypes_file       = input$genotypes_file$name,
+          parents_file         = input$parents_file$name,
+          progeny_file         = input$progeny_file$name,
+          founders_file        = if (is.null(founders_path)) "none" else input$founders_file$name,
+          method               = input$method,
+          error_threshold      = as.numeric(input$error_threshold),
+          min_markers          = as.integer(input$min_markers),
+          ploidy               = as.integer(input$ploidy),
+          top_n                = as.integer(input$top_n),
+          show_ties            = input$show_ties,
+          allow_parent_selfing = input$allow_parent_selfing,
+          exclude_self_match   = input$exclude_self_match
+        ))
         parentage_results(report)
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_parentage",
           value = 100, status = "success",
@@ -358,7 +430,7 @@ mod_find_parentage_server <- function(id, parent_session) {
         )
         shinyjs::enable("download_parentage_all")
         shiny::updateTabsetPanel(session, "parentage_results_tabs", selected = "Issue Tables")
-        
+
       }, error = function(e) {
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_parentage",
@@ -367,24 +439,24 @@ mod_find_parentage_server <- function(id, parent_session) {
         )
       })
     })
-    
+
     # Summary banner
     output$summary_banner <- shiny::renderUI({
       shiny::req(parentage_results())
       report <- parentage_results()
-      
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df) && !data.table::is.data.table(df)) 0L else nrow(df)
       n_pass   <- get_count(report$pass)
       n_high   <- get_count(report$high_error)
       n_low    <- get_count(report$low_markers)
       total    <- get_count(report$full_results)
-      
+
       banner_color <- if (n_high == 0 && n_low == 0) "#d4edda" else "#fff3cd"
       border_color <- if (n_high == 0 && n_low == 0) "#c3e6cb" else "#ffeeba"
       text_color   <- if (n_high == 0 && n_low == 0) "#155724"  else "#856404"
       headline     <- if (n_high == 0 && n_low == 0) "All progeny assigned confidently!" else
         paste0(n_high + n_low, " progeny flagged. Review the Issue Tables tab.")
-      
+
       shiny::HTML(paste0(
         "<div style='background-color:", banner_color, "; border: 1px solid ", border_color,
         "; padding: 12px; border-radius: 6px; margin-bottom: 12px;'>",
@@ -398,14 +470,14 @@ mod_find_parentage_server <- function(id, parent_session) {
         "</p></div>"
       ))
     })
-    
+
     # Results UI
     output$results_ui <- shiny::renderUI({
       shiny::req(parentage_results())
       report <- parentage_results()
-      
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df) && !data.table::is.data.table(df)) 0L else nrow(df)
-      
+
       make_section <- function(title, icon_name, df, color_hex) {
         n      <- get_count(df)
         tbl_id <- paste0("tbl_", sanitize_id(title))
@@ -430,23 +502,20 @@ mod_find_parentage_server <- function(id, parent_session) {
           }
         )
       }
-      
+
       render_if <- function(title, df) {
         output_id <- paste0("tbl_", sanitize_id(title))
         if (!is.null(df) && (is.data.frame(df) || data.table::is.data.table(df)) && nrow(df) > 0) {
           output[[output_id]] <- DT::renderDT({
-            DT::datatable(as.data.frame(df),
-                          rownames = FALSE,
-                          options  = list(pageLength = 10, scrollX = TRUE),
-                          class    = "table-bordered table-sm")
+            results_datatable(df)
           })
         }
       }
-      
+
       render_if("Pass",        report$pass)
       render_if("High Error",  report$high_error)
       render_if("Low Markers", report$low_markers)
-      
+
       shiny::tagList(
         shiny::h5(
           shiny::tagList(shiny::icon("list-check"), " Parentage Assignment Results"),
@@ -457,15 +526,54 @@ mod_find_parentage_server <- function(id, parent_session) {
         make_section("Low Markers", "exclamation",          report$low_markers, "#856404")
       )
     })
-    
-    # Mendelian error plot
+
+    # Mendelian error plot. The ggplot is returned, not printed, so Shiny knows
+    # its axes and clicks/hovers arrive in data units (error %)
     output$error_plot <- shiny::renderPlot({
       shiny::req(parentage_results())
       report <- parentage_results()
       shiny::validate(shiny::need(!is.null(report$plot), "Run parentage assignment to generate the plot."))
-      print(report$plot)
+      report$plot
     })
-    
+
+    # Progeny of a bar of the plot: hovering gives the count, clicking lists them
+    plot_breaks <- shiny::reactive({
+      p <- parentage_results()$plot
+      shiny::req(p)
+      histogram_breaks(p)
+    })
+    selected_bar <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(parentage_results(), selected_bar(NULL), ignoreNULL = FALSE)
+    shiny::observeEvent(input$error_plot_click, {
+      report <- parentage_results()
+      shiny::req(report$plot)
+      selected_bar(histogram_bar_rows(report$full_results, plot_breaks(), input$error_plot_click$x,
+                                      "mendelian_error_pct"))
+    })
+    output$error_plot_hint <- shiny::renderText({
+      report <- parentage_results()
+      shiny::req(report$plot)
+      hover <- input$error_plot_hover
+      bar   <- if (is.null(hover)) NULL else
+        histogram_bar_rows(report$full_results, plot_breaks(), hover$x, "mendelian_error_pct")
+      if (is.null(bar)) "Click a bar to list its progeny under the plot." else
+        paste0("Bar ", bar$label, ": ", nrow(bar$rows), " progeny. Click to list them.")
+    })
+    output$error_plot_bar_ui <- shiny::renderUI({
+      bar <- selected_bar()
+      if (is.null(bar)) return(NULL)
+      shiny::tagList(
+        shiny::h6(paste0("Progeny with an error of ", bar$label, " (", nrow(bar$rows), ")"),
+                  style = "font-weight: bold; margin-top: 6px;"),
+        DT::DTOutput(session$ns("error_plot_bar_table"))
+      )
+    })
+    output$error_plot_bar_table <- DT::renderDT({
+      bar <- selected_bar()
+      shiny::req(bar)
+      results_datatable(bar$rows)
+    })
+
     # Figure download
     output$download_parentage_plot <- shiny::downloadHandler(
       filename = function() {
@@ -485,48 +593,40 @@ mod_find_parentage_server <- function(id, parent_session) {
     )
     # The button sits in a dropdown hidden at start-up; keep its link active
     shiny::outputOptions(output, "download_parentage_plot", suspendWhenHidden = FALSE)
-    
-    # Unified data download
+
+    # Results download: one Excel workbook, every progeny with its issue first
     output$download_parentage_all <- shiny::downloadHandler(
       filename = function() {
-        paste0("find_parentage_results_", Sys.Date(), ".zip")
+        paste0("find_parentage_results_", Sys.Date(), ".xlsx")
       },
       content = function(file) {
         shiny::req(parentage_results())
-        report  <- parentage_results()
-        tmp_dir <- tempfile("parentage_export")
-        dir.create(tmp_dir)
-        on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
-        
-        # Full results
-        if (!is.null(report$full_results) && nrow(report$full_results) > 0) {
-          write.table(as.data.frame(report$full_results),
-                      file.path(tmp_dir, "full_results.txt"),
-                      sep = "\t", row.names = FALSE, quote = FALSE)
-        }
-        
-        # Per-status tables
-        sections <- list(
-          pass        = report$pass,
-          high_error  = report$high_error,
-          low_markers = report$low_markers
-        )
-        for (nm in names(sections)) {
-          df <- sections[[nm]]
-          if (!is.null(df) && nrow(df) > 0) {
-            write.table(as.data.frame(df),
-                        file.path(tmp_dir, paste0(nm, ".txt")),
-                        sep = "\t", row.names = FALSE, quote = FALSE)
-          }
-        }
-        
-        zip_files <- list.files(tmp_dir)
-        zip::zip(zipfile = file, files = zip_files, root = tmp_dir)
-        unlink(tmp_dir, recursive = TRUE)
-      },
-      contentType = "application/zip"
+        report <- parentage_results()
+        s      <- run_settings()
+        write_results_xlsx(list(
+          "All Progeny" = parentage_issues(report$full_results, s$error_threshold, s$min_markers),
+          "Pass"        = report$pass,
+          "High Error"  = report$high_error,
+          "Low Markers" = report$low_markers,
+          "Settings"    = settings_table(
+            "Tab"                  = "Find Parentage",
+            "Genotypes file"       = s$genotypes_file,
+            "Parents file"         = s$parents_file,
+            "Progeny file"         = s$progeny_file,
+            "Founders file"        = s$founders_file,
+            "Method"               = s$method,
+            "Error threshold (%)"  = s$error_threshold,
+            "Min markers"          = s$min_markers,
+            "Ploidy"               = s$ploidy,
+            "Top N matches"        = s$top_n,
+            "Show ties"            = s$show_ties,
+            "Allow parent selfing" = s$allow_parent_selfing,
+            "Exclude self-match"   = s$exclude_self_match
+          )
+        ), file)
+      }
     )
-    
+
   })
 }
 

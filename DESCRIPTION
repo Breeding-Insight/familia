@@ -1,13 +1,15 @@
 Package: Familia
 Title: 'shiny' Application for Population Structure and Ancestry Assessments
-Version: 2.2.0
+Version: 2.3.0
 Authors@R:
     c(
               person("Josue", "Chinchilla-Vargas",
                     role = c("aut","cre"),
-                    email = "josue.chinchilla@ufl.edu"),
+                    email = "josue.chinchilla@ufl.edu",
+                    comment = c(ORCID = "0000-0002-2399-7849")),
               person(c("Alexander", "M."), "Sandercock",
-                    role = "aut"),
+                    role = "aut",
+                    comment = c(ORCID = "0000-0001-6897-1856")),
               person("Breeding Insight Team",
                     role = "aut"))
 Description: Provides a 'shiny' web application developed by the Breeding Insight team

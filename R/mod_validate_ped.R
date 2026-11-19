@@ -8,7 +8,7 @@ mod_validate_ped_ui <- function(id) {
   shiny::tagList(
     shinyjs::useShinyjs(),
     shiny::fluidRow(
-      
+
       # Column 1: Inputs
       shiny::column(
         width = 3,
@@ -45,7 +45,11 @@ mod_validate_ped_ui <- function(id) {
           shiny::actionButton(ns("run_validate"), "Run Validation"),
           shiny::hr(),
           shinyjs::disabled(
-            shiny::downloadButton(ns("download_validate_all"), "Download Results")
+            shiny::downloadButton(ns("download_validate_all"), "Download Results (Excel)")
+          ),
+          shiny::div(style = "height: 8px;"),
+          shinyjs::disabled(
+            shiny::downloadButton(ns("download_pedigree"), "Download Validated Pedigree (.txt)")
           ),
           shiny::hr(),
           shiny::div(
@@ -58,7 +62,7 @@ mod_validate_ped_ui <- function(id) {
           )
         )
       ),
-      
+
       # Column 2: Results
       shiny::column(
         width = 6,
@@ -80,22 +84,29 @@ mod_validate_ped_ui <- function(id) {
                     <li>Upload a pedigree file with columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
                     <li>Upload a genotypes file, either as a table (.txt tab-separated or .csv) with an <code>id</code> column followed by marker columns coded as allele-B dosage (0, 1, ..., ploidy; e.g. 0, 1, 2 for diploid), as a VCF (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to dosages using the selected ploidy, or as a PLINK <code>.ped</code> file (diploid only, no <code>.map</code> needed).</li>
                     <li>Optionally upload a founders file (one id per line, no header). Individuals with both parents <code>0</code> that are listed in it are reported as Founders instead of Missing Parents.</li>
+                    <li>The <strong>Data Overview</strong> tab opens when a file is uploaded and counts the trios, the genotyped individuals and the markers.</li>
                     <li>Set the <strong>Ploidy</strong> (2 = diploid, 4 = tetraploid, ...) to match your data. Odd ploidy such as triploid uses a homozygosity-only check.</li>
                     <li>Set error thresholds and minimum markers, then click <strong>Run Validation</strong>.</li>
                     <li>Results are split into:</li>
                     <ul>
                       <li><strong>Pass</strong> - trios within the Mendelian error threshold.</li>
-                      <li><strong>Fail</strong> - trios exceeding the threshold.</li>
+                      <li><strong>Fail</strong> - trios exceeding the threshold; the <code>recommended_action</code> column names the parent(s) to set to missing.</li>
                       <li><strong>Low Markers</strong> - trios with insufficient markers.</li>
                       <li><strong>No Genotype Data</strong> - trios absent from the genotype file.</li>
                       <li><strong>Founders</strong> - trios identified as founders.</li>
                       <li><strong>Missing Parents</strong> - trios with one or both parents coded as 0.</li>
                     </ul>
-                    <li>Review the Issue Tables tab, then export results as a .zip file.</li>
+                    <li>In the <strong>Mendelian Error Plot</strong>, click a bar to list its trios under the plot.</li>
+                    <li>Review the Issue Tables tab. <strong>Download Results</strong> gives one Excel file with every trio and its issue, one sheet per table and the run settings; <strong>Download Validated Pedigree</strong> gives the pedigree with the recommended parents set to missing, for Find Parentage.</li>
                   </ul>
                 ')))
               ),
               style = "overflow-y: auto; height: 550px"
+            ),
+            shiny::tabPanel(
+              "Data Overview",
+              shiny::uiOutput(ns("dashboard")),   # summary tiles, filled in when the files are uploaded
+              style = "overflow-y: auto; height: 550px; padding: 10px;"
             ),
             shiny::tabPanel(
               "Issue Tables",
@@ -104,13 +115,17 @@ mod_validate_ped_ui <- function(id) {
             ),
             shiny::tabPanel(
               "Mendelian Error Plot",
-              shiny::plotOutput(ns("error_plot"), height = "450px"),
+              shiny::plotOutput(ns("error_plot"), height = "450px",
+                                click = ns("error_plot_click"),
+                                hover = shiny::hoverOpts(ns("error_plot_hover"), delay = 150, delayType = "debounce")),
+              shiny::div(class = "plot-hint", shiny::textOutput(ns("error_plot_hint"), inline = TRUE)),
+              shiny::uiOutput(ns("error_plot_bar_ui")),
               style = "overflow-y: auto; height: 550px; padding: 10px;"
             )
           )
         )
       ),
-      
+
       # Column 3: Status + Summary
       shiny::column(
         width = 3,
@@ -180,11 +195,11 @@ mod_validate_ped_ui <- function(id) {
 #' @noRd
 mod_validate_ped_server <- function(id, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
-    
+
     `%||%` <- function(x, y) if (is.null(x)) y else x
-    parentage_results <- shiny::reactiveVal(NULL)
-    
+
     validate_results <- shiny::reactiveVal(NULL)
+    run_settings     <- shiny::reactiveVal(NULL)   # inputs of the run, for the Settings sheet
 
     # Example files
     output$download_examples <- example_download_handler(example_files$validate_ped,
@@ -218,9 +233,9 @@ mod_validate_ped_server <- function(id, parent_session) {
         )
       )
     }
-    
+
     sanitize_id <- function(x) gsub("[^A-Za-z0-9]", "_", tolower(x))
-    
+
     # Help button
     shiny::observeEvent(input$help_btn, {
       shiny::showModal(
@@ -233,40 +248,84 @@ mod_validate_ped_server <- function(id, parent_session) {
         )
       )
     })
-    
+
+    # Uploaded files, read once for the summary tiles and the run. Genotypes
+    # are read without the Ploidy check, which is done when the run starts.
+    ped_input <- shiny::reactive({
+      shiny::req(input$pedigree_file)
+      read_table_upload(input$pedigree_file)
+    })
+    geno_input <- shiny::reactive({
+      shiny::req(input$genotypes_file)
+      read_genotype_upload(input$genotypes_file, ploidy = NULL)
+    })
+
+    # Summary tiles (Data Overview tab)
+    output$dashboard <- shiny::renderUI({
+      tiles <- list("Records" = NA, "Unique IDs" = NA, "Complete trios" = NA,
+                    "One parent known" = NA, "Both parents unknown" = NA,
+                    "Genotyped individuals" = NA, "Markers" = NA, "Testable trios" = NA)
+      notes <- character(0)
+      ped   <- NULL
+      if (!is.null(input$pedigree_file)) {
+        ped    <- tryCatch(ped_input(), error = function(e) e)
+        counts <- if (inherits(ped, "error")) NULL else pedigree_counts(ped)
+        if (inherits(ped, "error")) {
+          notes <- c(notes, paste("Could not read the pedigree file:", conditionMessage(ped)))
+          ped   <- NULL
+        } else if (is.null(counts)) {
+          notes <- c(notes, "The pedigree file needs id, male_parent and female_parent columns.")
+          ped   <- NULL
+        } else {
+          tiles[names(counts)] <- counts
+        }
+      }
+      if (!is.null(input$genotypes_file)) {
+        geno <- tryCatch(geno_input(), error = function(e) e)
+        if (inherits(geno, "error")) {
+          notes <- c(notes, paste("Could not read the genotypes file:", conditionMessage(geno)))
+        } else {
+          gc <- genotype_counts(geno)
+          tiles[["Genotyped individuals"]] <- length(gc$ids)
+          tiles[["Markers"]]               <- gc$markers
+          if (!is.null(ped)) tiles[["Testable trios"]] <- testable_trios(ped, gc$ids)
+        }
+      }
+      summary_strip(tiles, if (length(notes) > 0) paste(notes, collapse = " "))
+    })
+
+    # Uploading the pedigree or the genotypes opens the Data Overview tab
+    # (NULL until a file is uploaded, so nothing happens at start-up)
+    shiny::observeEvent(c(input$pedigree_file$datapath, input$genotypes_file$datapath), {
+      shiny::updateTabsetPanel(session, "validate_results_tabs", selected = "Data Overview")
+    })
+
     # Run validation
     shiny::observeEvent(input$run_validate, {
       shiny::req(input$pedigree_file, input$genotypes_file)
       validate_results(NULL)
       shinyjs::disable("download_validate_all")
-      
+      shinyjs::disable("download_pedigree")
+
       tryCatch({
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_validate",
           value = 10, status = "info",
           title = "Reading input files..."
         )
-        
-        ped_ext  <- tolower(tools::file_ext(input$pedigree_file$name))
 
-        ped_raw <- if (ped_ext == "csv") {
-          utils::read.csv(input$pedigree_file$datapath,  header = TRUE,
-                          stringsAsFactors = FALSE, check.names = FALSE)
-        } else {
-          utils::read.table(input$pedigree_file$datapath, header = TRUE, sep = "\t",
-                            stringsAsFactors = FALSE, check.names = FALSE)
-        }
-        
-        geno_raw <- read_genotype_upload(input$genotypes_file, ploidy = input$ploidy)
-        
+        ped_raw  <- ped_input()
+        geno_raw <- geno_input()
+        check_upload_ploidy(geno_raw, input$genotypes_file, input$ploidy)
+
         founders_path <- if (!is.null(input$founders_file)) input$founders_file$datapath else NULL
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_validate",
           value = 35, status = "info",
           title = "Evaluating trios..."
         )
-        
+
         # BIGpopA also prints the plot: send it to a null device, so it does not
         # open a plot window or write Rplots.pdf in the working directory
         grDevices::pdf(NULL)
@@ -285,23 +344,33 @@ mod_validate_ped_server <- function(id, parent_session) {
           ),
           finally = grDevices::dev.off()
         )
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_validate",
           value = 85, status = "info",
           title = "Compiling results..."
         )
-        
+
+        run_settings(list(
+          pedigree_file    = input$pedigree_file$name,
+          genotypes_file   = input$genotypes_file$name,
+          founders_file    = if (is.null(input$founders_file)) "none" else input$founders_file$name,
+          trio_threshold   = as.numeric(input$trio_error_threshold),
+          single_threshold = as.numeric(input$single_parent_error_threshold),
+          min_markers      = as.integer(input$min_markers),
+          ploidy           = as.integer(input$ploidy)
+        ))
         validate_results(report)
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_validate",
           value = 100, status = "success",
           title = "Finished"
         )
         shinyjs::enable("download_validate_all")
+        shinyjs::enable("download_pedigree")
         shiny::updateTabsetPanel(session, "validate_results_tabs", selected = "Issue Tables")
-        
+
       }, error = function(e) {
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_validate",
@@ -310,12 +379,12 @@ mod_validate_ped_server <- function(id, parent_session) {
         )
       })
     })
-    
+
     # Summary banner
     output$summary_banner <- shiny::renderUI({
       shiny::req(validate_results())
       report <- validate_results()
-      
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df) && !data.table::is.data.table(df)) 0L else nrow(df)
       n_pass     <- get_count(report$pass)
       n_fail     <- get_count(report$fail)
@@ -324,13 +393,13 @@ mod_validate_ped_server <- function(id, parent_session) {
       n_founders <- get_count(report$founders)
       n_missing  <- get_count(report$missing_parents)
       total      <- get_count(report$full_results)
-      
+
       banner_color <- if (n_fail == 0 && n_low == 0) "#d4edda" else "#fff3cd"
       border_color <- if (n_fail == 0 && n_low == 0) "#c3e6cb" else "#ffeeba"
       text_color   <- if (n_fail == 0 && n_low == 0) "#155724"  else "#856404"
       headline     <- if (n_fail == 0 && n_low == 0) "All trios passed validation!" else
         paste0(n_fail + n_low, " trio(s) flagged. Review the Issue Tables tab.")
-      
+
       shiny::HTML(paste0(
         "<div style='background-color:", banner_color, "; border: 1px solid ", border_color,
         "; padding: 12px; border-radius: 6px; margin-bottom: 12px;'>",
@@ -347,14 +416,14 @@ mod_validate_ped_server <- function(id, parent_session) {
         "</p></div>"
       ))
     })
-    
+
     # Results UI
     output$results_ui <- shiny::renderUI({
       shiny::req(validate_results())
       report <- validate_results()
-      
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df) && !data.table::is.data.table(df)) 0L else nrow(df)
-      
+
       make_section <- function(title, icon_name, df, color_hex) {
         n      <- get_count(df)
         tbl_id <- paste0("tbl_", sanitize_id(title))
@@ -379,19 +448,17 @@ mod_validate_ped_server <- function(id, parent_session) {
           }
         )
       }
-      
+
+      # Tables show the recommended action in plain language (downloads keep the codes)
       render_if <- function(title, df) {
         output_id <- paste0("tbl_", sanitize_id(title))
         if (!is.null(df) && (is.data.frame(df) || data.table::is.data.table(df)) && nrow(df) > 0) {
           output[[output_id]] <- DT::renderDT({
-            DT::datatable(as.data.frame(df),
-                          rownames = FALSE,
-                          options  = list(pageLength = 10, scrollX = TRUE),
-                          class    = "table-bordered table-sm")
+            results_datatable(plain_actions(df))
           })
         }
       }
-      
+
       render_if("Pass",              report$pass)
       render_if("Fail",              report$fail)
       render_if("Low Markers",       report$low_markers)
@@ -400,7 +467,7 @@ mod_validate_ped_server <- function(id, parent_session) {
       render_if("Missing Parents",   report$missing_parents)
       render_if("Marker Summary",    report$marker_summary)
       render_if("Marker Trio Table", report$marker_trio_table)
-      
+
       shiny::tagList(
         shiny::h5(
           shiny::tagList(shiny::icon("list-check"), " Validation Results"),
@@ -416,15 +483,54 @@ mod_validate_ped_server <- function(id, parent_session) {
         make_section("Marker Trio Table", "table-cells", report$marker_trio_table, "#0c5460")
       )
     })
-    
-    # Mendelian error plot
+
+    # Mendelian error plot. The ggplot is returned, not printed, so Shiny knows
+    # its axes and clicks/hovers arrive in data units (error %)
     output$error_plot <- shiny::renderPlot({
       shiny::req(validate_results())
       report <- validate_results()
       shiny::validate(shiny::need(!is.null(report$plot), "Run validation to generate the plot."))
-      print(report$plot)
+      report$plot
     })
-    
+
+    # Trios of a bar of the plot: hovering gives the count, clicking lists them
+    plot_breaks <- shiny::reactive({
+      p <- validate_results()$plot
+      shiny::req(p)
+      histogram_breaks(p)
+    })
+    selected_bar <- shiny::reactiveVal(NULL)
+    shiny::observeEvent(validate_results(), selected_bar(NULL), ignoreNULL = FALSE)
+    shiny::observeEvent(input$error_plot_click, {
+      report <- validate_results()
+      shiny::req(report$plot)
+      selected_bar(histogram_bar_rows(report$full_results, plot_breaks(), input$error_plot_click$x,
+                                      "trio_mendelian_error_pct"))
+    })
+    output$error_plot_hint <- shiny::renderText({
+      report <- validate_results()
+      shiny::req(report$plot)
+      hover <- input$error_plot_hover
+      bar   <- if (is.null(hover)) NULL else
+        histogram_bar_rows(report$full_results, plot_breaks(), hover$x, "trio_mendelian_error_pct")
+      if (is.null(bar)) "Click a bar to list its trios under the plot." else
+        paste0("Bar ", bar$label, ": ", nrow(bar$rows), " trio(s). Click to list them.")
+    })
+    output$error_plot_bar_ui <- shiny::renderUI({
+      bar <- selected_bar()
+      if (is.null(bar)) return(NULL)
+      shiny::tagList(
+        shiny::h6(paste0("Trios with a trio error of ", bar$label, " (", nrow(bar$rows), ")"),
+                  style = "font-weight: bold; margin-top: 6px;"),
+        DT::DTOutput(session$ns("error_plot_bar_table"))
+      )
+    })
+    output$error_plot_bar_table <- DT::renderDT({
+      bar <- selected_bar()
+      shiny::req(bar)
+      results_datatable(plain_actions(bar$rows))
+    })
+
     # Figure download
     output$download_validate_plot <- shiny::downloadHandler(
       filename = function() {
@@ -444,60 +550,50 @@ mod_validate_ped_server <- function(id, parent_session) {
     )
     # The button sits in a dropdown hidden at start-up; keep its link active
     shiny::outputOptions(output, "download_validate_plot", suspendWhenHidden = FALSE)
-    
-    # Unified data download
+
+    # Results download: one Excel workbook, every trio with its issue first
     output$download_validate_all <- shiny::downloadHandler(
       filename = function() {
-        paste0("validate_pedigree_results_", Sys.Date(), ".zip")
+        paste0("validate_pedigree_results_", Sys.Date(), ".xlsx")
       },
       content = function(file) {
         shiny::req(validate_results())
-        report  <- validate_results()
-        tmp_dir <- tempfile("validate_export")
-        dir.create(tmp_dir)
-        on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
-        
-        # Corrected pedigree
-        if (!is.null(report$corrected_pedigree) && nrow(report$corrected_pedigree) > 0) {
-          write.table(as.data.frame(report$corrected_pedigree),
-                      file.path(tmp_dir, "corrected_pedigree.txt"),
-                      sep = "\t", row.names = FALSE, quote = FALSE)
-        }
-        
-        # Full results
-        if (!is.null(report$full_results) && nrow(report$full_results) > 0) {
-          write.table(as.data.frame(report$full_results),
-                      file.path(tmp_dir, "full_results.txt"),
-                      sep = "\t", row.names = FALSE, quote = FALSE)
-        }
-        
-        # Per-status tables
-        sections <- list(
-          pass             = report$pass,
-          fail             = report$fail,
-          low_markers      = report$low_markers,
-          no_genotype_data = report$no_genotype_data,
-          founders         = report$founders,
-          missing_parents  = report$missing_parents,
-          marker_summary   = report$marker_summary,
-          marker_trio_table = report$marker_trio_table
-        )
-        for (nm in names(sections)) {
-          df <- sections[[nm]]
-          if (!is.null(df) && nrow(df) > 0) {
-            write.table(as.data.frame(df),
-                        file.path(tmp_dir, paste0(nm, ".txt")),
-                        sep = "\t", row.names = FALSE, quote = FALSE)
-          }
-        }
-        
-        zip_files <- list.files(tmp_dir)
-        zip::zip(zipfile = file, files = zip_files, root = tmp_dir)
-        unlink(tmp_dir, recursive = TRUE)
-      },
-      contentType = "application/zip"
+        report <- validate_results()
+        s      <- run_settings()
+        write_results_xlsx(list(
+          "All Trios"         = validation_issues(report$full_results, s$trio_threshold, s$min_markers),
+          "Pass"              = report$pass,
+          "Fail"              = report$fail,
+          "Low Markers"       = report$low_markers,
+          "No Genotype Data"  = report$no_genotype_data,
+          "Founders"          = report$founders,
+          "Missing Parents"   = report$missing_parents,
+          "Marker Summary"    = report$marker_summary,
+          "Marker Trio Table" = report$marker_trio_table,
+          "Settings"          = settings_table(
+            "Tab"                               = "Validate Pedigree",
+            "Pedigree file"                     = s$pedigree_file,
+            "Genotypes file"                    = s$genotypes_file,
+            "Founders file"                     = s$founders_file,
+            "Trio error threshold (%)"          = s$trio_threshold,
+            "Single parent error threshold (%)" = s$single_threshold,
+            "Min markers"                       = s$min_markers,
+            "Ploidy"                            = s$ploidy
+          )
+        ), file)
+      }
     )
-    
+
+    # Pedigree download: the recommended parents set to missing, for Find Parentage
+    output$download_pedigree <- shiny::downloadHandler(
+      filename = function() "pedigree_validated.txt",
+      content  = function(file) {
+        shiny::req(validate_results())
+        utils::write.table(as.data.frame(validate_results()$corrected_pedigree), file,
+                           sep = "\t", row.names = FALSE, quote = FALSE)
+      }
+    )
+
   })
 }
 

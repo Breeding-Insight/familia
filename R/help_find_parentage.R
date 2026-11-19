@@ -108,7 +108,7 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       "The Find Parentage module assigns the most likely parents to each progeny individual
       using genotype data and Mendelian error analysis. Upload genotype, parents, and progeny
       files, select a method, set parameters, and run the assignment. Results are categorized
-      as Pass, High Error, or Low Markers, and can be exported as a .zip file. The Example
+      as Pass, High Error, or Low Markers, and can be exported as one Excel file. The Example
       files link in the Inputs box downloads a small data set to try the tab.",
       style = "font-size: 13px;"
     ),
@@ -147,9 +147,11 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Parentage Assignment</strong> to execute the analysis.")),
       shiny::tags$li(shiny::HTML(
-        "<strong>Review</strong> the Run Summary panel and the Issue Tables tab for categorized results."
+        "<strong>Review</strong> the Run Summary panel and the Issue Tables tab for categorized results.
+        A table's <em>Search</em> box finds the text in any column, ignoring case; to search one column,
+        type in the box under its header. In the Mendelian Error Plot, click a bar to list its progeny."
       )),
-      shiny::tags$li(shiny::HTML("<strong>Export</strong> all results as a .zip file."))
+      shiny::tags$li(shiny::HTML("<strong>Export</strong> all results as one Excel file."))
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
@@ -293,13 +295,13 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
       body_content = shiny::tagList(
         shiny::p(
           "Available when the Progeny File is a pedigree with id, male_parent and female_parent columns
-          (for example the corrected pedigree from Validate Pedigree). A parent coded 0, NA or empty is unknown.
+          (for example the validated pedigree from Validate Pedigree). A parent coded 0, NA or empty is unknown.
           A known male searches only females, a known female searches only males, and rows with both parents
           unknown get the full pair search, unless they are listed in the optional Founders File. Rows with
           both parents known are skipped. The Parents File (M/F/A) is still required for the candidates.
           Results add search_mode and known_parent_error_pct; a high known_parent_error_pct suggests the
           known parent is wrong. A known parent without genotypes gives the status known_parent_no_genotype,
-          which is listed only in full_results.txt.",
+          which is listed only in the All Progeny sheet of the results.",
           style = "margin-bottom: 0;"
         )
       )
@@ -414,10 +416,12 @@ help_content_find_parentage <- function(collapse_fn = NULL, id_prefix = "") {
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
-      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all progeny assignments, tab-separated, including statuses that have no table in the app (e.g. <code>known_parent_no_genotype</code>).")),
-      shiny::tags$li(shiny::HTML("<code>pass.txt</code> - progeny with confident assignments (if any).")),
-      shiny::tags$li(shiny::HTML("<code>high_error.txt</code> - progeny exceeding the error threshold (if any).")),
-      shiny::tags$li(shiny::HTML("<code>low_markers.txt</code> - progeny with insufficient markers (if any)."))
+      shiny::tags$li(shiny::HTML("<strong>Download Results (Excel)</strong> - one workbook: <em>All Progeny</em>
+        (every progeny, including statuses that have no table in the app such as
+        <code>known_parent_no_genotype</code>, with an <code>issue</code> column, e.g.
+        <em>high error: best error 12.50% &gt; 5%</em> or the number of tied candidates), the
+        <em>Pass</em>, <em>High Error</em> and <em>Low Markers</em> sheets, and a <em>Settings</em>
+        sheet with the method and parameters of the run."))
     )
   )
 }

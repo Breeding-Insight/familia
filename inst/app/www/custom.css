@@ -456,3 +456,97 @@
   color: #adb5bd !important;
   cursor: not-allowed;
 }
+
+/* ── Compact rows in every table (header side padding left for the sort arrows) ── */
+table.dataTable thead th,
+table.dataTable thead td {
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+table.dataTable tbody td {
+  padding: 3px 8px !important;
+  line-height: 1.3;
+}
+table.dataTable {
+  font-size: 13px;
+}
+
+/* ── Summary tiles of the Data Overview tab (equal widths, so a tile alone in
+      the last row is not stretched across the box) ── */
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.summary-tile {
+  background-color: white;
+  border-left: 4px solid var(--azure-core);
+  border-radius: 4px;
+  padding: 6px 12px;
+  box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2);
+}
+.summary-tile-value {
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--azure-deep);
+}
+.summary-tile-label {
+  font-size: 12px;
+  color: #6c757d;
+}
+.summary-strip-note {
+  font-size: 12px;
+  color: #856404;
+  margin: -6px 0 12px 0;
+}
+
+/* ── Keep checkboxes of the Conflicting Trios table (row selection) ── */
+table.dataTable tbody td.keep-cell {
+  text-align: center;
+  cursor: pointer;
+}
+table.dataTable tbody td.keep-cell::before {
+  content: "\2610";
+  font-size: 17px;
+  color: #495057;
+}
+table.dataTable tbody tr.selected td.keep-cell::before {
+  content: "\2611";
+}
+
+/* ── Spinner on plots while they are being drawn ── */
+.shiny-plot-output {
+  position: relative;
+}
+.shiny-plot-output.recalculating {
+  opacity: 1 !important;
+}
+.shiny-plot-output.recalculating > img {
+  opacity: 0.3;
+}
+.shiny-plot-output.recalculating::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
+  border: 4px solid var(--azure-lite);
+  border-top-color: var(--azure-core);
+  border-radius: 50%;
+  animation: familia-spin 0.8s linear infinite;
+  z-index: 5;
+}
+@keyframes familia-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Text under the Mendelian error plots ── */
+.plot-hint {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 4px 0 8px 0;
+}

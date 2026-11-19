@@ -121,8 +121,9 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
   <code>.map</code> file there."
       )),
       shiny::tags$li(shiny::HTML(
-        "<strong>Upload Reference IDs</strong> - a tab-separated <code>.txt</code> file assigning
-  each reference sample to a group/line. Each column is one group; values are sample IDs."
+        "<strong>Upload Reference IDs</strong> - a tab-separated <code>.txt</code> or comma-separated
+  <code>.csv</code> file assigning each reference sample to a group/line. Each column is one group;
+  values are sample IDs."
       )),
       shiny::tags$li(shiny::HTML(
         "<strong>Upload Validation Genotypes</strong> - same formats as the reference genotype file.
@@ -141,7 +142,9 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
   Changing the threshold updates the results immediately, without re-running the estimation."
       )),
       shiny::tags$li(shiny::HTML("<strong>Run Estimation</strong> - computes ancestry proportions for each validation sample.")),
-      shiny::tags$li(shiny::HTML("<strong>Review</strong> the Results Table and Ancestry Plot tabs.")),
+      shiny::tags$li(shiny::HTML("<strong>Review</strong> the Results Table and Ancestry Plot tabs.
+  The table's <em>Search</em> box finds the text in any column, ignoring case; to search one column,
+  type in the box under its header.")),
       shiny::tags$li(shiny::HTML("<strong>Export</strong> results as an <code>.xlsx</code> file or save the plot image."))
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -226,12 +229,12 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
     collapse_fn(
       panel_id     = pid("pbt_help_ref_ids"),
       icon_name    = "users",
-      label        = "Reference IDs (.txt)",
+      label        = "Reference IDs (.txt / .csv)",
       body_content = shiny::tagList(
         shiny::p(
-          "Tab-separated file where each column represents one reference group or line.
-           Column headers are the group names. Each column lists the sample IDs belonging to that group.
-           Columns may have different lengths - empty cells are ignored.",
+          "Tab-separated (.txt) or comma-separated (.csv) file where each column represents one
+           reference group or line. Column headers are the group names. Each column lists the sample
+           IDs belonging to that group. Columns may have different lengths - empty cells are ignored.",
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -241,7 +244,10 @@ help_content_polybreedtools <- function(collapse_fn = NULL, id_prefix = "") {
           ref_ids_row("ExampleFour", "SampleThree")
         )),
         shiny::p(
-          "Sample IDs in this file must match IDs present in the Reference Genotypes file.",
+          "Sample IDs in this file must match IDs present in the Reference Genotypes file. IDs that
+           are not found are listed in the Status panel and not used. If none of the IDs of a group
+           are found, the run stops and names the group: a file with one column of sample IDs and
+           another of group names has to be rearranged to one column per group.",
           style = "color: #6c757d; font-size: 11px;"
         )
       )

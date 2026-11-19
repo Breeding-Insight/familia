@@ -1,3 +1,55 @@
+# Familia 2.3.0
+
+This version was developed with AI assistance; all code has been reviewed by
+a human.
+
+Changes from user testing feedback.
+
+* Pedigree Cleaner: in the Conflicting Trios table, check the **Keep** box of the
+  row to keep (at most one per id) and click **Apply selection**: the check runs
+  again without the other rows of that id, so the kept parents are used for the
+  missing parents, sex roles and cycles. **Reset** clears the choices, and the
+  Run Summary counts the kept and set-to-missing ids.
+* Pedigree Cleaner, Validate Pedigree and Find Parentage: **Download Results**
+  gives one Excel file instead of a zip of text files. Its first sheet (All
+  Records, All Trios or All Progeny) has every record with an `issue` column
+  (and, in the Cleaner, the `action` taken); one sheet per table and a
+  Settings sheet with the files and options of the run follow. The pedigree
+  for the next tab is a separate download: `pedigree_cleaned.txt` and
+  `pedigree_validated.txt` (it was `corrected_pedigree.txt` in both).
+* Every tab has a **Data Overview** tab, next to Instructions, with summary
+  tiles that count what was uploaded (records, complete trios, genotyped
+  individuals, markers, reference samples per line, detected ploidy, missing
+  calls...) before anything is run. It opens when a file is uploaded. Each file
+  is read once, on upload, and reused for the run.
+* Validate Pedigree and Find Parentage: hovering over a bar of the Mendelian
+  Error Plot gives its count, and clicking it lists its trios or progeny under
+  the plot.
+* Wording: the options are now "Set conflicting parents to missing (0)" and
+  "Set parents with inconsistent sex roles to missing (0)", since the app sets
+  parents it cannot trust to missing rather than correcting them. The Validate
+  tables show the recommended action in plain language (e.g. "Set male parent
+  to missing"); the downloads keep BIGpopA's codes. Table titles no longer
+  include the action ("Exact Duplicates", "Conflicting Trios", "Missing
+  Parents", "Cycles / Dependencies").
+* Tables: a filter box under each column header searches one column, matches
+  are highlighted, and rows are more compact. The Help panels explain that the
+  Search box looks in every column, ignoring case.
+* Plots show a spinner while they are drawn.
+* Spaces at the start or end of a cell of an uploaded table are removed, so an
+  id typed as `"A1 "` is the same individual as `"A1"`. A trailing space used
+  to hide conflicting trios and duplicates in the Pedigree Cleaner.
+* BreedTools: the Reference IDs file can also be a `.csv`. When none of the IDs
+  of a line are in the reference genotypes, the run stops with a message naming
+  the line and the expected layout (one column per line), instead of listing
+  every marker as not genotyped; IDs that are not found are listed in the
+  Status box. Long messages in the Status box wrap.
+* SNMF: a banner explains how to install LEA from Bioconductor when it is
+  missing, and the Instructions say that the example file is tetraploid
+  (Ploidy 4) and that Ploidy must match your own file.
+* Validate Pedigree Help: the Fail and Low Markers panels showed `<code>` tags
+  as text.
+
 # Familia 2.2.0
 
 * Every tab has an **Example files** link in its Inputs box that downloads a

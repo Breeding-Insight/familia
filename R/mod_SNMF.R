@@ -12,6 +12,19 @@ mod_SNMF_ui <- function(id) {
   ns <- shiny::NS(id)
   shiny::tagList(
     shinyjs::useShinyjs(),
+    # Banner when LEA (Bioconductor, not installed with Familia) is missing
+    if (!nzchar(system.file(package = "LEA"))) {
+      shiny::div(
+        class = "alert alert-warning",
+        style = "margin: 0 0 12px 0;",
+        shiny::HTML(paste0(
+          "<strong>SNMF needs the LEA package, which is not installed.</strong> ",
+          "LEA comes from Bioconductor, so it is not installed with Familia. ",
+          "Install it by running this in R, then restart Familia: ",
+          "<code>install.packages(\"BiocManager\"); BiocManager::install(\"LEA\")</code>"
+        ))
+      )
+    },
     shiny::fluidRow(
       shinydisconnect::disconnectMessage(
         text           = "An unexpected error occurred, please reload the application and check the input file(s).",
@@ -96,12 +109,18 @@ mod_SNMF_ui <- function(id) {
               shiny::HTML(paste0(
                 "<p>This tab runs <code>LEA::snmf()</code> to estimate ancestry proportions (Q-matrix) across K.</p>",
                 "<ul>",
-                "<li>Upload a <code>.vcf</code> / <code>.vcf.gz</code> (will be converted to LEA <code>.geno</code>) or an existing <code>.geno</code>. The example file is a tetraploid VCF, so set <strong>Ploidy</strong> to 4.</li>",
+                "<li>Upload a <code>.vcf</code> / <code>.vcf.gz</code> (will be converted to LEA <code>.geno</code>) or an existing <code>.geno</code>. The <strong>Example file</strong> link downloads <code>example_snmf.vcf</code>, which is tetraploid (Ploidy 4). For your own file, set <strong>Ploidy</strong> to match it.</li>",
+                "<li>The <strong>Data Overview</strong> tab opens when the genotypes are uploaded and counts the samples, the markers, the ploidy of a VCF and the missing calls.</li>",
                 "<li>Choose a K range and repetitions.</li>",
                 "<li>In cross-entropy modes, the app summarizes cross-entropy per K and can auto-pick the best K/run.</li>",
                 "</ul>"
               )),
               style = "overflow-y: auto; height: 500px"
+            ),
+            shiny::tabPanel(
+              "Data Overview",
+              shiny::uiOutput(ns("dashboard")),   # summary tiles, filled in when the genotypes are uploaded
+              style = "overflow-y: auto; height: 500px; padding: 10px;"
             ),
             shiny::tabPanel(
               "Cross-Entropy",
@@ -234,6 +253,50 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   
   #  Example file (tetraploid VCF, set Ploidy to 4)
   output$download_examples <- example_download_handler(example_files$snmf)
+
+  #  Uploaded genotypes, read once for the summary tiles and the run (a VCF is
+  #  read without the Ploidy check, which is done when the run starts)
+  snmf_input <- shiny::reactive({
+    shiny::req(input$snmf_file)
+    if (grepl("\\.geno$", tolower(input$snmf_file$name))) {
+      lines   <- readLines(input$snmf_file$datapath, warn = FALSE)
+      lines   <- lines[nzchar(lines)]
+      n_calls <- sum(nchar(lines))
+      list(
+        geno    = NULL,
+        samples = if (length(lines) > 0) nchar(lines[1]) else 0L,
+        markers = length(lines),
+        ploidy  = NA,
+        missing = if (n_calls > 0) sum(nchar(lines) - nchar(gsub("9", "", lines, fixed = TRUE))) / n_calls else NA_real_
+      )
+    } else {
+      geno <- read_genotype_upload(input$snmf_file, ploidy = NULL)
+      gc   <- genotype_counts(geno)
+      list(geno = geno, samples = length(gc$ids), markers = gc$markers,
+           ploidy = attr(geno, "ploidy"), missing = gc$missing)
+    }
+  })
+
+  #  Summary tiles (Data Overview tab)
+  output$dashboard <- shiny::renderUI({
+    tiles <- list("Samples" = NA, "Markers" = NA, "Detected ploidy" = NA, "Missing calls" = NA)
+    if (is.null(input$snmf_file)) return(summary_strip(tiles))
+    x <- tryCatch(snmf_input(), error = function(e) e)
+    if (inherits(x, "error")) {
+      return(summary_strip(tiles, paste("Could not read the genotypes file:", conditionMessage(x))))
+    }
+    summary_strip(list(
+      "Samples"         = x$samples,
+      "Markers"         = x$markers,
+      "Detected ploidy" = if (is.null(x$ploidy)) NA else x$ploidy,
+      "Missing calls"   = format_pct(x$missing)
+    ))
+  })
+
+  #  Uploading the genotypes opens the Data Overview tab
+  shiny::observeEvent(input$snmf_file, {
+    shiny::updateTabsetPanel(session, "snmf_results_tabs", selected = "Data Overview")
+  })
 
   #  Help button
   shiny::observeEvent(input$help_btn, {
@@ -532,7 +595,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   output$snmf_q_table <- DT::renderDT({
     q  <- q_matrix()
     df <- data.frame(ID = rownames(q), q, check.names = FALSE)
-    DT::datatable(df, options = list(scrollX = TRUE, pageLength = 10))
+    results_datatable(df)
   })
   
   output$snmf_q_plot  <- shiny::renderPlot({ ancestry_plot() })
@@ -541,13 +604,17 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
   output$snmf_ce_table <- DT::renderDT({
     shiny::validate(shiny::need(isTRUE(state$entropy_enabled), "Cross-entropy disabled (see Selection mode)."))
     shiny::validate(shiny::need(!is.null(state$ce_summary),    "Run SNMF to compute cross-entropy."))
-    DT::datatable(state$ce_summary, options = list(pageLength = 10, scrollX = TRUE))
+    results_datatable(state$ce_summary)
   })
   
   #  Run SNMF
   shiny::observeEvent(input$snmf_run, {
     if (!requireNamespace("LEA", quietly = TRUE)) {
-      show_error("Missing dependency", "Install the LEA package to use SNMF.")
+      show_error("LEA is not installed",
+                 shiny::HTML(paste0(
+                   "SNMF needs the LEA package from Bioconductor. Install it by running this in R, ",
+                   "then restart Familia:<br><code>install.packages(\"BiocManager\"); BiocManager::install(\"LEA\")</code>"
+                 )))
       return()
     }
     if (is.null(input$snmf_file$datapath)) {
@@ -604,7 +671,7 @@ mod_SNMF_server <- function(input, output, session, parent_session) {
       shinyWidgets::updateProgressBar(session = session, id = "pb_snmf", value = 15, title = "Converting VCF \u2192 GENO")
       set_status("Converting VCF to GENO...\n")
       vcf_to_geno_res <- tryCatch(
-        write_geno_upload(input$snmf_file, geno_path, ploidy),   # shared reader (utils.R)
+        write_geno_upload(input$snmf_file, geno_path, ploidy, geno = snmf_input()$geno),   # read on upload (utils.R)
         error = function(e) e
       )
       if (inherits(vcf_to_geno_res, "error") || !file.exists(geno_path)) {

@@ -61,13 +61,13 @@ list.files(system.file("extdata", package = "Familia"))
 
 | Tab | Purpose | Main output |
 |---|---|---|
-| Pedigree Cleaner | Find duplicates, conflicting trios, inconsistent sex roles, missing parents and cycles | Corrected pedigree and issue tables |
-| Validate Pedigree | Test recorded trios against genotypes with Mendelian errors | Status per trio, corrected pedigree, marker summary, marker x trio table |
+| Pedigree Cleaner | Find duplicates, conflicting trios, inconsistent sex roles, missing parents and cycles | Cleaned pedigree and issue tables |
+| Validate Pedigree | Test recorded trios against genotypes with Mendelian errors | Status per trio, validated pedigree, marker summary, marker x trio table |
 | Find Parentage | Search the best parents for each offspring | Best pair, best male, best female, best match or filled-in pedigree |
 | BreedTools<sup>poly</sup> | Estimate the proportion of each reference line in each sample | Composition table and plot |
 | SNMF | Unsupervised ancestry proportions for a range of K | Cross-entropy plot and ancestry plot |
 
-Each table can be downloaded as a zip file with **Download Results**, and each plot can be saved with **Save Image**.
+**Download Results** saves the results of a tab; for the pedigree tabs it is one Excel file whose first sheet lists every record with its issue, and the cleaned or validated pedigree is a separate text file for the next tab. Each plot can be saved with **Save Image**.
 
 # Run the same analyses in R
 

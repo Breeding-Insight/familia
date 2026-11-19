@@ -87,8 +87,8 @@ A typical breeding program asks these questions in sequence:
 
 | Tab | Use it to | Main output |
 |---|---|---|
-| Pedigree Cleaner | Fix structural pedigree errors before any genotype work | Corrected pedigree, issue tables |
-| Validate Pedigree | Test recorded trios against genotypes | Status per trio, corrected pedigree, marker summary |
+| Pedigree Cleaner | Fix structural pedigree errors before any genotype work | Cleaned pedigree, issue tables |
+| Validate Pedigree | Test recorded trios against genotypes | Status per trio, validated pedigree, marker summary |
 | Find Parentage | Assign or fill in parents from a candidate pool | Best parent(s), error %, ties |
 | BreedTools<sup>poly</sup> | Line/breed composition from a reference panel | Composition table with R2, bar plot, Excel |
 | SNMF | Unsupervised ancestry with `LEA::snmf()` | Q matrix, cross-entropy, plot |
@@ -126,7 +126,9 @@ Familia::run_app()
 
 `run_app()` opens the app in the RStudio viewer or in your browser. Installing Familia also installs BIGpopA (>= 2.2.0).
 
-Every tab has an **Example files** link at the top of its Inputs box, which downloads the files used in this guide, and a yellow **Help** button at the bottom, which opens the steps, the parameters and an example of each result category for that tab.
+Every tab has an **Example files** link at the top of its Inputs box, which downloads the files used in this guide, and a yellow **Help** button at the bottom, which opens the steps, the parameters and an example of each result category for that tab. The **Data Overview** tab, next to Instructions, counts what was uploaded (for example records, complete trios, genotyped individuals and markers) as soon as the files are loaded, before anything is run; it opens when a file is uploaded.
+
+In every results table, the **Search** box finds the text in any column, ignoring case: typing `P` also matches `parent` and `pass` in other columns. To search one column, type in the box under its header. Matches are highlighted.
 
 ![Help window of the Find Parentage tab, with the overview, the steps and collapsible panels for each method and parameter.](images/24_help_modal.png)
 
@@ -146,10 +148,10 @@ The diploid data set has six genotyped founders (`M1`, `M2`, `M3`, `F1`, `F2`, `
 | `C07` | Two rows with different male parents (`M2` and `M1`) | Pedigree Cleaner: Conflicting Trios |
 | `M4` | Male parent of `C09` and female parent of `C10`, has no row of its own and is not genotyped | Pedigree Cleaner: Inconsistent Sex Roles, Missing Parents |
 | `X1`, `X2` | Each recorded as the parent of the other | Pedigree Cleaner: Cycles |
-| `C04` | Recorded as `M3` x `F2`, but the male parent is `M2` | Validate: `remove_male_parent` |
-| `C05` | Recorded as `M2` x `F1`, but the female parent is `F3` | Validate: `remove_female_parent` |
-| `C06` | Recorded as `M2` x `F2`, but the parents are `M3` x `F1` | Validate: `remove_both` |
-| `C11` | Contaminated sample (DNA of two individuals) | Validate: `unresolved` |
+| `C04` | Recorded as `M3` x `F2`, but the male parent is `M2` | Validate: Set male parent to missing |
+| `C05` | Recorded as `M2` x `F1`, but the female parent is `F3` | Validate: Set female parent to missing |
+| `C06` | Recorded as `M2` x `F2`, but the parents are `M3` x `F1` | Validate: Set both parents to missing |
+| `C11` | Contaminated sample (DNA of two individuals) | Validate: Unresolved |
 | `C08` | Failed sample with only 8 markers called | Validate and Find Parentage: low markers |
 | `M1c` | Same genotypes as `M1` | Find Parentage: ties |
 | `snp050`, `snp150`, `snp250` | Miscalled markers (random calls) | Validate: Marker Summary |
@@ -157,7 +159,7 @@ The diploid data set has six genotyped founders (`M1`, `M2`, `M3`, `F1`, `F2`, `
 
 # Input files
 
-All files are uploaded in the browser: text files are tab-separated (`.txt`, `.tsv`) or comma-separated (`.csv`). The required column names are matched ignoring case, spaces and dots in every tab, so `ID`, `Male_Parent` or `female.parent` also work. Individual ids and marker names must match exactly between files (case and spaces matter).
+All files are uploaded in the browser: text files are tab-separated (`.txt`, `.tsv`) or comma-separated (`.csv`). The required column names are matched ignoring case, spaces and dots in every tab, so `ID`, `Male_Parent` or `female.parent` also work. Individual ids and marker names must match exactly between files: case matters (`a1` and `A1` are different individuals), while spaces at the start or end of a cell are removed.
 
 | File | Required columns | Example file | Used by |
 |---|---|---|---|
@@ -232,22 +234,22 @@ There are two kinds of missing information, coded differently:
 
 Missing calls never count as errors. Each test only uses the markers where every individual it compares has a call:
 
-- **Trio test** (Validate Pedigree; Find Parentage with *Best pair* or *Fill in pedigree*): markers where the offspring and both parents have a call, the *testable* markers. A trio with fewer testable markers than **Min Markers** is *Low Markers*; one with none gets the status `no_data` (only in the downloaded `full_results.txt`).
-- **Single-parent test** (recommended corrections, and the single-parent methods of Find Parentage): markers where the parent and the offspring are both homozygous. If there are none, the parent counts as failing.
+- **Trio test** (Validate Pedigree; Find Parentage with *Best pair* or *Fill in pedigree*): markers where the offspring and both parents have a call, the *testable* markers. A trio with fewer testable markers than **Min Markers** is *Low Markers*; one with none gets the status `no_data` (only in the All Trios sheet of the download).
+- **Single-parent test** (recommended actions, and the single-parent methods of Find Parentage): markers where the parent and the offspring are both homozygous. If there are none, the parent counts as failing.
 - **Marker Summary**: `mismatch_pct` is `NA` for a marker that was not tested in any trio.
-- **BreedTools**: validation samples with less than 50% of calls are removed, and markers without calls are dropped (the Status box lists both). A marker missing in every reference sample of a line stops the run with a list of the markers to remove.
+- **BreedTools**: validation samples with less than 50% of calls are removed, and markers without calls are dropped (the Status box lists both). Reference IDs that are not in the reference genotypes are listed in the Status box and not used; if none of the IDs of a line are found, the run stops and names the line (a Reference IDs file with one column of sample ids and one of line names has to be rearranged to one column per line). A marker missing in every reference sample of a line stops the run with a list of the markers to remove.
 
 # Pedigree Cleaner
 
 The Pedigree Cleaner checks the structure of the pedigree only; no genotypes are used. Run it first, because a structurally wrong pedigree (loops, an individual recorded with two different sets of parents) gives misleading validation results.
 
 1. Upload the pedigree.
-2. Choose the correction options (both on by default):
-    - **Correct conflicting trios**: when the same `id` appears in several rows with different parents, the rows collapse to one. A parent that disagrees between the rows is set to `0` (unknown); a parent that agrees is kept. If off, conflicts are only reported.
-    - **Correct inconsistent sex roles**: an individual used as male parent in one row and as female parent in another is set to `0` wherever it is listed as a parent, because the app cannot tell which role is right. If off, the issue is only reported.
+2. Choose the options (both on by default). The app never guesses the right parent; it only sets the parents it cannot trust to missing:
+    - **Set conflicting parents to missing (0)**: when the same `id` appears in several rows with different parents, the rows collapse to one. A parent that disagrees between the rows is set to `0` (unknown); a parent that agrees is kept. If off, conflicts are only reported.
+    - **Set parents with inconsistent sex roles to missing (0)**: an individual used as male parent in one row and as female parent in another is set to `0` wherever it is listed as a parent, because the app cannot tell which role is right. If off, the issue is only reported.
 3. Click **Run Pedigree Check**.
 
-![Pedigree Cleaner tab with the Example file link, the pedigree upload, the options for correcting conflicting trios and inconsistent sex roles, and the Run button.](images/02_cleaner_inputs.png)
+![Pedigree Cleaner tab with the Example file link, the pedigree upload, the two options, the Run button and the Data Overview tab.](images/02_cleaner_inputs.png)
 
 The checks run in this order:
 
@@ -263,19 +265,21 @@ The **Run Summary** counts the issues and the Issue Tables tab has one table per
 
 ![Pedigree Cleaner results with the Run Summary counts and the Exact Duplicates and Conflicting Trios tables.](images/03_cleaner_results.png)
 
-![The remaining Pedigree Cleaner tables: Inconsistent Sex Roles, Missing Parents Added and Cycles / Dependencies Detected.](images/04_cleaner_tables.png)
+![The remaining Pedigree Cleaner tables: Inconsistent Sex Roles, Missing Parents and Cycles / Dependencies.](images/04_cleaner_tables.png)
 
-In the example, the Cleaner finds `r nrow(clean$exact_duplicates)` exact duplicate rows (the two copies of `C02`) and the `r nrow(clean$conflicting_trios)` rows of the conflicting trio `C07`, whose male parent is `M2` in one row and `M1` in the other: the corrected row keeps the female parent `F3` and sets the male parent to `0`. `M4` has no row, so it is added with unknown parents. `M4` is also the male parent of `C09` and the female parent of `C10`, so it is cleared from both rows (`r nrow(clean$inconsistent_sex_roles)` rows), although only the second role is wrong. This is safe: *Fill in pedigree* searches the cleared parents later. Last, `X1` and `X2` are each other's parent: the cycle is listed in Cycles / Dependencies Detected (each id is a recorded parent of the one before it) for you to fix in the pedigree record.
+In the example, the Cleaner finds `r nrow(clean$exact_duplicates)` exact duplicate rows (the two copies of `C02`) and the `r nrow(clean$conflicting_trios)` rows of the conflicting trio `C07`, whose male parent is `M2` in one row and `M1` in the other: the cleaned row keeps the female parent `F3` and sets the male parent to `0`. `M4` has no row, so it is added with unknown parents. `M4` is also the male parent of `C09` and the female parent of `C10`, so it is cleared from both rows (`r nrow(clean$inconsistent_sex_roles)` rows), although only the second role is wrong. This is safe: *Fill in pedigree* searches the cleared parents later. Last, `X1` and `X2` are each other's parent: the cycle is listed in Cycles / Dependencies (each id is a recorded parent of the one before it) for you to fix in the pedigree record.
 
-**Download Results** gives a zip with `corrected_pedigree.txt` and one file per issue type that has rows. Extra columns of the pedigree (for example a family or year column) are kept in the corrected pedigree only when no conflicting trio is collapsed. The corrected pedigree is the input of Validate Pedigree; for the example it is `example_pedigree_cleaned.txt`.
+**Keeping a conflicting trio.** If you know which row of a conflicting trio is right, check its **Keep** box in the Conflicting Trios table (at most one row per id) and click **Apply selection**. The check runs again without the other rows of that id, so the kept parents are used everywhere, including the missing parents, sex roles and cycles. The Run Summary then reads, for example, *Conflicting trios: 1 id (1 kept by you, 0 set to missing)*; **Reset** clears the choices. For `C07`, you would keep the row with `M2` if the breeding record confirms it.
+
+**Download Results (Excel)** gives one workbook. Its first sheet, *All Records*, lists every uploaded row and every added parent with an `issue` column (for example *exact duplicate; conflicting trio*), the `action` taken (*row removed (duplicate)*, *disagreeing parent(s) set to missing, rows merged*, *kept by user*, *added with unknown parents (0)*, *flagged, fix by hand*) and the parents in the cleaned pedigree. One sheet per issue table follows (the Conflicting Trios sheet marks the rows you kept), and a *Settings* sheet records the file and options of the run. **Download Cleaned Pedigree (.txt)** gives `pedigree_cleaned.txt`, the input of Validate Pedigree; for the example it is `example_pedigree_cleaned.txt`. Exact duplicates are always removed and missing parents always added, so it is never just the uploaded file. Extra columns of the pedigree (for example a family or year column) are kept in the cleaned pedigree only when no conflicting trio is collapsed.
 
 # Validate Pedigree
 
-Validate Pedigree tests each recorded trio (offspring, male parent, female parent) against the genotypes with a Mendelian error analysis, and recommends which parent to remove from failing trios.
+Validate Pedigree tests each recorded trio (offspring, male parent, female parent) against the genotypes with a Mendelian error analysis, and recommends which parent to set to missing in failing trios.
 
 ## Parameters
 
-1. Upload the pedigree (the corrected pedigree from the Cleaner), the genotypes and, optionally, the founders file.
+1. Upload the pedigree (the cleaned pedigree from the Cleaner), the genotypes and, optionally, the founders file. The Data Overview tab also counts the genotyped individuals, the markers and the *testable trios*: complete trios whose three individuals are all in the genotype file.
 2. Set the parameters:
     - **Trio Error Threshold** (default 5%): maximum percentage of testable markers with a Mendelian error for a trio to *pass*. Lower values are stricter; with noisy dosage calls a higher value avoids failing correct trios.
     - **Single Parent Error Threshold** (default 2%): when a trio fails, each parent is tested alone on homozygous markers (see the box below). A parent above this value is the likely faulty one.
@@ -283,7 +287,7 @@ Validate Pedigree tests each recorded trio (offspring, male parent, female paren
     - **Ploidy** (2 to 20): ploidy of the dosages.
 3. Click **Run Validation**.
 
-![Validate Pedigree tab with the pedigree, genotype and founders files uploaded and the parameter inputs.](images/05_validate_inputs.png)
+![Validate Pedigree tab with the pedigree, genotype and founders files uploaded, the parameter inputs and the Data Overview tab.](images/05_validate_inputs.png)
 
 ## Status of each trio
 
@@ -294,7 +298,7 @@ Validate Pedigree tests each recorded trio (offspring, male parent, female paren
 | Low Markers | Fewer than Min Markers testable markers |
 | No Genotype Data | At least one of the three individuals is not in the genotype file |
 | Founders | Both parents `0` and the id is in the founders file |
-| Missing Parents | One or both parents are `0`, and the id is not a listed founder (`missing_both_parents`, `missing_male_parent` or `missing_female_parent` in `full_results.txt`) |
+| Missing Parents | One or both parents are `0`, and the id is not a listed founder (`missing_both_parents`, `missing_male_parent` or `missing_female_parent` in the All Trios sheet of the results) |
 
 In the example, the Run Summary counts `r nrow(res)` individuals: `r nrow(val$pass)` pass, `r nrow(val$fail)` fail, `r nrow(val$low_markers)` with low markers, `r nrow(val$no_genotype_data)` without genotype data (`M4`, `X1` and `X2`), `r nrow(val$founders)` founders and `r nrow(val$missing_parents)` with a missing parent (`C07`, `C09` and `C10`, whose parents were cleared by the Cleaner). Start with the *Pass* table: these are the trios you can trust.
 
@@ -323,32 +327,32 @@ A failed trio shows that the pair is wrong, but not which parent. Each parent is
 For odd ploidy the trio test also uses this opposite-homozygote rule. The [BIGpopA tutorial](https://github.com/Breeding-Insight/BIGpopA) (section *How the Mendelian error is calculated*, in the `docs` folder) goes through one trio marker by marker.
 :::
 
-## Failed trios and recommended correction
+## Failed trios and recommended action
 
-The *Fail* table gives, for each trio, the trio error, the markers tested, the single-parent error of each parent (`male_parent_hom_error_pct`, `female_parent_hom_error_pct`) and the `recommended_correction`:
+The *Fail* table gives, for each trio, the trio error, the markers tested, the single-parent error of each parent (`male_parent_hom_error_pct`, `female_parent_hom_error_pct`) and the `recommended_action`. The tables show the action in plain words; the downloads keep BIGpopA's code in a `recommended_correction` column:
 
-| `recommended_correction` | Interpretation |
+| `recommended_action` (code) | Interpretation |
 |---|---|
-| `none` | Trio passes, or it is a founder, has a missing parent, has no genotype data or has no testable marker |
-| `remove_male_parent` | The trio fails and only the male parent fails the single-parent test |
-| `remove_female_parent` | The trio fails and only the female parent fails the single-parent test |
-| `remove_both` | The trio fails and both parents fail the single-parent test |
-| `unresolved` | The trio fails but neither parent fails the single-parent test; the record is probably wrong but the faulty parent cannot be identified |
-| `low_markers_*` | The trio has fewer than Min Markers testable markers; the suffix is the decision the same rules would give (`low_markers_keep_both` means the error is within the threshold and both parents pass) |
+| None (`none`) | Trio passes, or it is a founder, has a missing parent, has no genotype data or has no testable marker |
+| Set male parent to missing (`remove_male_parent`) | The trio fails and only the male parent fails the single-parent test |
+| Set female parent to missing (`remove_female_parent`) | The trio fails and only the female parent fails the single-parent test |
+| Set both parents to missing (`remove_both`) | The trio fails and both parents fail the single-parent test |
+| Unresolved: review by hand (`unresolved`) | The trio fails but neither parent fails the single-parent test; the record is probably wrong but the faulty parent cannot be identified |
+| Low markers: ... (`low_markers_*`) | The trio has fewer than Min Markers testable markers; the rest is the decision the same rules would give (*Low markers: keep both parents* means the error is within the threshold and both parents pass) |
 
-![Validate Pedigree Fail table with the trio error, the single-parent error of each parent and the recommended correction.](images/07_validate_fail.png)
+![Validate Pedigree Fail table with the trio error, the single-parent error of each parent and the recommended action.](images/07_validate_fail.png)
 
-In the example, `C04` (recorded as `M3` x `F2`) has a trio error of `r get_val(res, "C04", "trio_mendelian_error_pct")`% over `r get_val(res, "C04", "trio_markers_tested")` markers. `M3` has a single-parent error of `r get_val(res, "C04", "male_parent_hom_error_pct")`% and `F2` of `r get_val(res, "C04", "female_parent_hom_error_pct")`%, so the recommendation is `remove_male_parent`. In the same way `C05` gets `remove_female_parent`, and `C06`, whose two recorded parents are wrong, `remove_both`.
+In the example, `C04` (recorded as `M3` x `F2`) has a trio error of `r get_val(res, "C04", "trio_mendelian_error_pct")`% over `r get_val(res, "C04", "trio_markers_tested")` markers. `M3` has a single-parent error of `r get_val(res, "C04", "male_parent_hom_error_pct")`% and `F2` of `r get_val(res, "C04", "female_parent_hom_error_pct")`%, so the recommendation is *Set male parent to missing*. In the same way `C05` gets *Set female parent to missing*, and `C06`, whose two recorded parents are wrong, *Set both parents to missing*.
 
-`C11` also fails (`r get_val(res, "C11", "trio_mendelian_error_pct")`%), but its parents pass the single-parent test (`r get_val(res, "C11", "male_parent_hom_error_pct")`% and `r get_val(res, "C11", "female_parent_hom_error_pct")`%). The sample is a mix of two individuals' DNA, called heterozygous wherever they differ: it carries alleles that the pair cannot produce together, yet it never contradicts one parent alone. The recommendation is `unresolved`, and the record is left unchanged for you to check; here, by genotyping the sample again.
+`C11` also fails (`r get_val(res, "C11", "trio_mendelian_error_pct")`%), but its parents pass the single-parent test (`r get_val(res, "C11", "male_parent_hom_error_pct")`% and `r get_val(res, "C11", "female_parent_hom_error_pct")`%). The sample is a mix of two individuals' DNA, called heterozygous wherever they differ: it carries alleles that the pair cannot produce together, yet it never contradicts one parent alone. The recommendation is *Unresolved*, and the record is left unchanged for you to check; here, by genotyping the sample again.
 
-The **corrected pedigree** sets the parents named in `remove_*` decisions to `0`, including `low_markers_remove_*` decisions. Trios with `none`, `unresolved` or `low_markers_keep_both` are left unchanged. Validate does not propose replacement parents: run *Find Parentage > Fill in pedigree* on the corrected pedigree to search for them (see [Fill in pedigree](#fill-in-pedigree)).
+The **validated pedigree** sets the parents named by the recommended action to `0`, including the *Low markers* ones. Trios with *None*, *Unresolved* or *Low markers: keep both parents* are left unchanged. Validate does not propose replacement parents: run *Find Parentage > Fill in pedigree* on the validated pedigree to search for them (see [Fill in pedigree](#fill-in-pedigree)).
 
 The next tables list the trios that could not be judged, the founders and the missing parents.
 
 ![Validate Pedigree Low Markers, No Genotype Data and Founders tables.](images/08_validate_low_nogeno.png)
 
-`C08` has only `r get_val(res, "C08", "trio_markers_tested")` testable markers. They agree with its parents (`r get_val(res, "C08", "recommended_correction")`), but they are too few to trust; genotype it again. `M4`, `X1` and `X2` have no genotypes, so the fix is to genotype them, not to edit the pedigree. The founders are the seven genotyped individuals listed in `example_founders.txt`; without the founders file they would be listed as missing both parents.
+`C08` has only `r get_val(res, "C08", "trio_markers_tested")` testable markers. They agree with its parents (*`r gsub("_", " ", sub("^low_markers_", "low markers: ", get_val(res, "C08", "recommended_correction")))`*), but they are too few to trust; genotype it again. `M4`, `X1` and `X2` have no genotypes, so the fix is to genotype them, not to edit the pedigree. The founders are the seven genotyped individuals listed in `example_founders.txt`; without the founders file they would be listed as missing both parents.
 
 ## Marker Summary
 
@@ -377,7 +381,7 @@ The Marker Trio Table shows the verdict of every marker in every trio with both 
 
 ![Marker Trio Table with one row per marker and one column per trio.](images/10_validate_marker_trio.png)
 
-With many markers and trios the table is large; use `marker_trio_table.txt` from the download to work with it.
+With many markers and trios the table is large; use the Marker Trio Table sheet of the download to work with it.
 
 ## Mendelian Error Plot
 
@@ -385,7 +389,9 @@ The plot is a histogram of the trio error (1% bins) of the trios with genotype d
 
 ![Mendelian Error Plot, a histogram of trio error percentages with the threshold line, and the Plot Controls box with Image Options and Save Image.](images/11_validate_error_plot.png)
 
-**Download Results** gives a zip with `corrected_pedigree.txt`, `full_results.txt`, one file per status, `marker_summary.txt` and `marker_trio_table.txt` (files for empty tables are not written). **Save Image** in Plot Controls saves the plot; **Image Options** sets the file type, resolution and size.
+Hover over a bar to see how many trios it holds, and click it to list them in a table under the plot, with their parents, error, markers tested, status and recommended action.
+
+**Download Results (Excel)** gives one workbook. Its first sheet, *All Trios*, has every trio with an `issue` column (for example *fail: trio error 41.67% > 5%* or *low markers: 8 testable markers < 10*) and the recommended action in plain words next to BIGpopA's code. One sheet per status, the Marker Summary and the Marker Trio Table follow, and a *Settings* sheet records the files and parameters of the run. **Download Validated Pedigree (.txt)** gives `pedigree_validated.txt`, the input of *Fill in pedigree*; for the example it is `example_pedigree_validated.txt`. **Save Image** in Plot Controls saves the plot; **Image Options** sets the file type, resolution and size.
 
 # Find Parentage
 
@@ -415,7 +421,7 @@ Only the single-parent methods rely on homozygous markers. Prefer *Best pair* wh
     - **Exclude self-match** (default on): an offspring is never tested as its own parent, which matters when offspring are also in the parents file.
 4. Click **Run Parentage Assignment**.
 
-![Find Parentage tab with the genotype, parents and progeny files uploaded and the parameter inputs.](images/12_parentage_inputs.png)
+![Find Parentage tab with the genotype, parents and progeny files uploaded, the parameter inputs and the Data Overview tab.](images/12_parentage_inputs.png)
 
 ![Find Parentage method list with Best pair, Best male parent, Best female parent, Best match and Fill in pedigree, the last one greyed out because the progeny file is not a pedigree.](images/13_parentage_methods.png)
 
@@ -445,7 +451,9 @@ In the example, *Best pair* on the 38 offspring gives `r nrow(fp$pass)` pass, `r
 
 `C09` is `high_error`: its male parent `M4` is not genotyped, so even the best pair (`r get_val(fpr, "C09", "male_parent")` x `r get_val(fpr, "C09", "female_parent")`) has `r get_val(fpr, "C09", "mendelian_error_pct")`% error. The contaminated `C11` is also `high_error` (`r get_val(fpr, "C11", "mendelian_error_pct")`%), and `C08`, with `r get_val(fpr, "C08", "markers_tested")` markers tested, is `low_markers`.
 
-**Download Results** gives a zip with `full_results.txt` (every offspring, including statuses that have no table, such as `known_parent_no_genotype`) and `pass.txt`, `high_error.txt` and `low_markers.txt`. **Save Image** saves the Mendelian Error Plot.
+As in Validate Pedigree, hover over a bar of the Mendelian Error Plot to see how many offspring it holds, and click it to list them under the plot.
+
+**Download Results (Excel)** gives one workbook. Its first sheet, *All Progeny*, has every offspring, including statuses that have no table such as `known_parent_no_genotype`, with an `issue` column (for example *high error: best error 12.50% > 5%*, *low markers: 8 markers tested < 10*, or *2 tied candidates*). The Pass, High Error and Low Markers sheets follow, and a *Settings* sheet records the files, method and parameters of the run. **Save Image** saves the Mendelian Error Plot.
 
 ## Top N and ties
 
@@ -458,7 +466,7 @@ A large gap between the error of rank 1 and rank 2 supports the assignment.
 
 ## Fill in pedigree
 
-*Fill in pedigree* looks for the missing parents of a pedigree, typically the corrected pedigree from Validate Pedigree. It is available only when the progeny file has `id`, `male_parent` and `female_parent` columns; the parents file is still required.
+*Fill in pedigree* looks for the missing parents of a pedigree, typically the validated pedigree from Validate Pedigree. It is available only when the progeny file has `id`, `male_parent` and `female_parent` columns; the parents file is still required.
 
 - Unknown parents are coded `0`, `NA` or empty. Each row is handled on its own: a known male parent searches only females, a known female parent only males, and a row with both parents unknown gets the full pair search.
 - Rows with both parents known are skipped and do not appear in the results.
@@ -469,7 +477,7 @@ A large gap between the error of rank 1 and rank 2 supports the assignment.
 
 ![Fill in pedigree results with the search mode and the known parent error of each searched row.](images/17_fill_in_pedigree.png)
 
-In the example, the progeny file is `example_pedigree_validated.txt` (the corrected pedigree from Validate Pedigree) and the founders file `example_founders.txt`. Only the `r nrow(fr)` rows with a missing parent are searched: `C04`, `C05` and `C06`, whose parents Validate removed, and `C07`, `C09` and `C10`, cleared by the Cleaner. The founders and the complete trios are skipped. `C04` keeps `F2` and gets `r get_val(fr, "C04", "male_parent")` (`search_mode = known_female`), `C05` keeps `M2` and gets `r get_val(fr, "C05", "female_parent")`, and `C06` gets the pair `r get_val(fr, "C06", "male_parent")` x `r get_val(fr, "C06", "female_parent")`. `C09` keeps `F1`, whose known parent error of `r get_val(fr, "C09", "known_parent_error_pct")`% confirms it, but no genotyped male fits (`high_error`), because its male parent `M4` has no genotypes.
+In the example, the progeny file is `example_pedigree_validated.txt` (the validated pedigree from Validate Pedigree) and the founders file `example_founders.txt`. Only the `r nrow(fr)` rows with a missing parent are searched: `C04`, `C05` and `C06`, whose parents Validate removed, and `C07`, `C09` and `C10`, cleared by the Cleaner. The founders and the complete trios are skipped. `C04` keeps `F2` and gets `r get_val(fr, "C04", "male_parent")` (`search_mode = known_female`), `C05` keeps `M2` and gets `r get_val(fr, "C05", "female_parent")`, and `C06` gets the pair `r get_val(fr, "C06", "male_parent")` x `r get_val(fr, "C06", "female_parent")`. `C09` keeps `F1`, whose known parent error of `r get_val(fr, "C09", "known_parent_error_pct")`% confirms it, but no genotyped male fits (`high_error`), because its male parent `M4` has no genotypes.
 
 # BreedTools<sup>poly</sup>
 
@@ -483,7 +491,7 @@ BreedTools estimates the proportion of each reference line or breed in each samp
     - **Assignment threshold (%)** (default 50): a sample is assigned to its highest line only if that proportion reaches the threshold; otherwise it is *Undetermined*. With 0 every sample is assigned. Changing it updates the table and plot without rerunning.
 3. Click **Run Estimation**.
 
-![BreedTools tab with the reference genotypes, Reference IDs and validation genotypes uploaded, Ploidy 4 and the assignment threshold at 50, and the Example Inputs box.](images/18_breedtools_inputs.png)
+![BreedTools tab with the reference genotypes, Reference IDs and validation genotypes uploaded, Ploidy 4 and the assignment threshold at 50, the Data Overview tab and the Example Inputs box.](images/18_breedtools_inputs.png)
 
 The references should be representative, unadmixed samples; the more distinct the lines, the better the estimate. Marker names must match between the reference and validation files. The files can be dosage tables, VCF or PLINK `.ped`; if either is a `.ped`, both must be, each with its `.map`. The Example Inputs box shows the format and downloads the example files.
 
@@ -518,7 +526,7 @@ SNMF estimates ancestry proportions without a reference panel, using sparse non-
     - **Selection mode**: *Auto-pick best K* (default) computes the cross-entropy and selects the K with the lowest value; *Manual K/run* computes it and lets you choose K; *No cross-entropy* skips it.
 3. Click **Run SNMF**.
 
-![SNMF tab with the example VCF uploaded, Ploidy 4, K from 1 to 5 and 3 repetitions.](images/21_snmf_inputs.png)
+![SNMF tab with the example VCF uploaded, Ploidy 4, K from 1 to 5, 3 repetitions and the Data Overview tab.](images/21_snmf_inputs.png)
 
 ## Choosing K
 
@@ -556,7 +564,7 @@ See the [BIGpopA tutorial](https://github.com/Breeding-Insight/BIGpopA) for ever
 
 # Tips
 
-- Typical workflow: Pedigree Cleaner -> Validate Pedigree -> Find Parentage (*Fill in pedigree*, with the founders file) on the corrected pedigree.
+- Typical workflow: Pedigree Cleaner -> Validate Pedigree -> Find Parentage (*Fill in pedigree*, with the founders file) on the validated pedigree.
 - Make sure you are using the right ploidy. A wrong ploidy gives many false failures.
 - Upload the founders file in Validate Pedigree and in *Fill in pedigree*, so founders are neither reported as missing parents nor searched.
 - Check the Marker Summary before blaming individuals; remove bad markers and rerun.

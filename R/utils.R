@@ -23,14 +23,17 @@ genotype_upload_format <- function(file_input) {
 #' text files are read as CSV or tab-separated tables.
 #'
 #' @param file_input A Shiny fileInput value (list with name and datapath).
-#' @param ploidy Integer ploidy passed to vcf_to_dosage(); must be 2 for .ped.
+#' @param ploidy Selected Ploidy: a VCF must match the ploidy of its genotype
+#'   calls and a .ped needs 2. NULL skips this check, so a file can be read
+#'   once on upload and checked at the run with check_upload_ploidy().
 #' @param id_name Name to give the sample ID column of a converted file.
 #' @param counted_allele Named character vector passed to ped_to_dosage() so a
 #'   .ped file is coded like a previous one (e.g. validation like reference).
 #' @param map_input Optional Shiny fileInput value for a PLINK .map file. When
 #'   given, .ped markers are named from the .map; otherwise by position.
 #' @return A data.frame with an ID column followed by marker columns. For .ped
-#'   files the "counted_allele" attribute holds the allele counted per marker.
+#'   files the "counted_allele" attribute holds the allele counted per marker,
+#'   and for VCF files the "ploidy" attribute the ploidy of the calls.
 #' @noRd
 read_genotype_upload <- function(file_input, ploidy, id_name = "id",
                                  counted_allele = NULL, map_input = NULL) {
@@ -38,7 +41,7 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
   format <- genotype_upload_format(file_input)
 
   if (format == "ped") {
-    if (as.integer(ploidy) != 2) {
+    if (!is.null(ploidy) && as.integer(ploidy) != 2) {
       stop("PLINK .ped files are diploid; set Ploidy to 2.")
     }
     map_path <- if (!is.null(map_input)) map_input$datapath else NULL
@@ -54,9 +57,10 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
   if (format == "vcf") {
     # Infer the ploidy from the GT calls and stop if it differs from the selection
     vcf <- BIGpopA::vcf_to_dosage(file_input$datapath, ploidy = NULL, verbose = FALSE)
-    check_vcf_ploidy(attr(vcf, "ploidy"), ploidy)
+    if (!is.null(ploidy)) check_vcf_ploidy(attr(vcf, "ploidy"), ploidy)
     geno <- as.data.frame(vcf, check.names = FALSE)
     names(geno)[names(geno) == "id"] <- id_name
+    attr(geno, "ploidy") <- attr(vcf, "ploidy")   # for check_upload_ploidy()
     return(geno)
   }
   if (grepl("\\.gz$", name)) {
@@ -70,6 +74,9 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
                       stringsAsFactors = FALSE, check.names = FALSE,
                       comment.char = "", quote = "")
   }
+  # Spaces at the start or end of a text cell are removed, so IDs match the pedigree
+  is_text       <- vapply(geno, is.character, logical(1))
+  geno[is_text] <- lapply(geno[is_text], trimws)
 
   # ID column name is not case sensitive (id, ID, Id): rename it to id_name
   if (!id_name %in% names(geno)) {
@@ -77,6 +84,24 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
     if (length(hit) >= 1) names(geno)[hit[1]] <- id_name
   }
   geno
+}
+
+#' Check an uploaded genotype file against the selected Ploidy
+#'
+#' For files read with read_genotype_upload(ploidy = NULL): a PLINK .ped needs
+#' Ploidy 2, and a VCF must match the ploidy of its genotype calls.
+#'
+#' @param geno Result of read_genotype_upload().
+#' @param file_input The Shiny fileInput value it was read from.
+#' @param ploidy Ploidy selected in the app.
+#' @noRd
+check_upload_ploidy <- function(geno, file_input, ploidy) {
+  format <- genotype_upload_format(file_input)
+  if (format == "ped" && as.integer(ploidy) != 2) {
+    stop("PLINK .ped files are diploid; set Ploidy to 2.", call. = FALSE)
+  }
+  if (format == "vcf") check_vcf_ploidy(attr(geno, "ploidy"), ploidy)
+  invisible(TRUE)
 }
 
 #' Write an uploaded genotype file as a LEA .geno file (SNMF)
@@ -90,14 +115,20 @@ read_genotype_upload <- function(file_input, ploidy, id_name = "id",
 #' @param file_input A Shiny fileInput value (list with name and datapath).
 #' @param geno_path Path of the .geno file to write.
 #' @param ploidy Integer ploidy, up to 8 (one digit per call).
+#' @param geno Optional: the upload already read with
+#'   read_genotype_upload(ploidy = NULL); it is then only checked, not read again.
 #' @return A list with geno_path and sample_ids.
 #' @noRd
-write_geno_upload <- function(file_input, geno_path, ploidy) {
+write_geno_upload <- function(file_input, geno_path, ploidy, geno = NULL) {
   ploidy <- as.integer(ploidy)
   if (ploidy > 8) {
     stop("SNMF supports ploidy up to 8 (one digit per call in the .geno file).", call. = FALSE)
   }
-  geno <- read_genotype_upload(file_input, ploidy = ploidy)
+  if (is.null(geno)) {
+    geno <- read_genotype_upload(file_input, ploidy = ploidy)
+  } else {
+    check_upload_ploidy(geno, file_input, ploidy)
+  }
   dose <- as.matrix(geno[, names(geno) != "id", drop = FALSE])   # samples x markers
   if (nrow(dose) == 0 || ncol(dose) == 0) {
     stop("No genotype calls were found in the uploaded file.", call. = FALSE)

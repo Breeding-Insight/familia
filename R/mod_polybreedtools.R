@@ -13,7 +13,7 @@ mod_polybreedtools_ui <- function(id) {
   tagList(
     shinyjs::useShinyjs(),
     fluidRow(
-      
+
       #  Column 1: Inputs
       column(
         width = 3,
@@ -27,7 +27,7 @@ mod_polybreedtools_ui <- function(id) {
           example_files_ui(ns, example_files$polybreedtools),
           fileInput(ns("reference_file"), "Reference Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)",  accept = genotype_upload_accept),
           uiOutput(ns("reference_map_ui")),    # shown only for a .ped reference
-          fileInput(ns("ref_ids_file"),   "Reference IDs",                                          accept = ".txt"),
+          fileInput(ns("ref_ids_file"),   "Reference IDs (.txt, .csv)",                             accept = c(".txt", ".tsv", ".csv")),
           fileInput(ns("validation_file"),"Validation Genotypes (.txt, .csv, .vcf, .vcf.gz, .ped)", accept = genotype_upload_accept),
           uiOutput(ns("validation_map_ui")),   # shown only for a .ped validation file
           numericInput(ns("ploidy"), "Ploidy", value = 2, min = 1, max = 20, step = 1),
@@ -74,14 +74,20 @@ mod_polybreedtools_ui <- function(id) {
                     <ul>
                       <li><strong>Reference Genotypes:</strong> Either a genotype matrix (.txt tab-separated or .csv) with samples in rows and SNP markers in columns, with an <code>ID</code> column holding the sample IDs (the name is not case sensitive, so <code>id</code> also works) and missing values coded as <code>NA</code>; a VCF file (<code>.vcf</code> / <code>.vcf.gz</code>), whose <code>GT</code> calls are converted to allele-B dosages using the selected ploidy; or a PLINK <code>.ped</code> file (diploid only) together with its <code>.map</code> file, which supplies the marker names.</li>
                       <li><strong>Assignment threshold (%):</strong> A sample is assigned to its highest-proportion line only if that proportion meets the threshold; otherwise it is labelled <code>Undetermined</code>. The default is 50. Use 0 to always assign the highest line. Changes apply immediately without re-running.</li>
-                      <li><strong>Reference IDs:</strong> A .txt file with one column per population, listing the reference sample IDs. Header example: <code>Group1</code>, <code>Group2</code>.</li>
+                      <li><strong>Reference IDs:</strong> A tab-separated (.txt) or comma-separated (.csv) file with one column per population: the header is the population name and the column lists its reference sample IDs, which must match the IDs in the reference genotypes. Header example: <code>Group1</code>, <code>Group2</code>.</li>
                       <li><strong>Validation Genotypes:</strong> Same formats as the reference genotype file. Reference and validation files do not need to be the same format, but marker names must match. The exception is <code>.ped</code>: if either file is a <code>.ped</code>, both must be <code>.ped</code> files, each uploaded with its <code>.map</code>. Markers are matched by the names in the <code>.map</code> files, so their order does not need to match.</li>
                     </ul>
+                    <li><strong>Data Overview:</strong> opens when a file is uploaded and counts the reference lines and samples, the samples to assign and the shared markers.</li>
                     <li><strong>Results Table:</strong> the estimated percentage of each line, the <code>Predicted line</code> and <code>R2</code>. R2 is how well the estimated mix of lines explains the sample (squared correlation between its dosages divided by the ploidy and the line frequencies weighted by its proportions). It is usually well below 1, so compare it between samples: a much lower R2 than the rest suggests a line missing from the reference panel or poor-quality genotypes.</li>
                   </ul>
                 ')))
               ),
               style = "overflow-y: auto; height: 500px"
+            ),
+            shiny::tabPanel(
+              "Data Overview",
+              uiOutput(ns("dashboard")),   # summary tiles, filled in when the files are uploaded
+              style = "overflow-y: auto; height: 500px; padding: 10px;"
             ),
             shiny::tabPanel("Results Table", DT::DTOutput(ns("preview")),                         style = "overflow-y: auto; height: 500px"),
             shiny::tabPanel("Ancestry Plot", shiny::plotOutput(ns("bar_plot"), height = "450px"), style = "overflow-y: auto; height: 500px")
@@ -123,7 +129,9 @@ mod_polybreedtools_ui <- function(id) {
           width       = 12,
           collapsible = TRUE,
           status      = "info",
-          shiny::verbatimTextOutput(ns("status"))
+          shiny::verbatimTextOutput(ns("status")),
+          # wrap long messages instead of cutting them at the box edge
+          shiny::tags$style(paste0("#", ns("status"), " { white-space: pre-wrap; word-break: break-word; }"))
         ),
         box(
           title       = "Plot Controls",
@@ -251,6 +259,84 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
   observeEvent(input$reference_map,   { ped_maps$reference  <- input$reference_map })
   observeEvent(input$validation_map,  { ped_maps$validation <- input$validation_map })
 
+  #  Uploaded files, read once for the summary tiles and the run. Genotypes are
+  #  read without the Ploidy check, which is done when the run starts; a .ped
+  #  waits for its .map, and a validation .ped is coded like the reference .ped
+  reference_input <- reactive({
+    req(input$reference_file)
+    if (genotype_upload_format(input$reference_file) == "ped") req(ped_maps$reference)
+    read_genotype_upload(input$reference_file, ploidy = NULL, id_name = "ID",
+                         map_input = ped_maps$reference)
+  })
+  validation_input <- reactive({
+    req(input$validation_file)
+    counted_allele <- NULL
+    if (genotype_upload_format(input$validation_file) == "ped") {
+      req(ped_maps$validation)
+      if (!is.null(input$reference_file) && genotype_upload_format(input$reference_file) == "ped") {
+        counted_allele <- attr(reference_input(), "counted_allele")
+      }
+    }
+    read_genotype_upload(input$validation_file, ploidy = NULL, id_name = "ID",
+                         counted_allele = counted_allele, map_input = ped_maps$validation)
+  })
+
+  #  Reference IDs: one column per population (header = population name);
+  #  .csv is comma-separated, .txt / .tsv tab-separated, empty cells are skipped
+  ref_ids_input <- reactive({
+    req(input$ref_ids_file)
+    ids_sep       <- if (tolower(tools::file_ext(input$ref_ids_file$name)) == "csv") "," else "\t"
+    reference_ids <- utils::read.table(input$ref_ids_file$datapath, header = TRUE, sep = ids_sep,
+                                       quote = "\"", comment.char = "", fill = TRUE,
+                                       check.names = FALSE, colClasses = "character",
+                                       na.strings = c("", "NA"))
+    lapply(as.list(reference_ids), function(x) { x <- trimws(x[!is.na(x)]); x[nzchar(x)] })
+  })
+
+  #  Summary tiles (Data Overview tab)
+  output$dashboard <- renderUI({
+    notes <- character(0)
+    # NULL while a file is missing or waits for its .map; reading errors become notes
+    read_or_note <- function(expr, what) {
+      x <- tryCatch(expr, error = function(e) e)
+      if (inherits(x, "shiny.silent.error")) return(NULL)
+      if (inherits(x, "error")) {
+        notes <<- c(notes, paste0("Could not read the ", what, ": ", conditionMessage(x)))
+        return(NULL)
+      }
+      x
+    }
+    reference  <- if (is.null(input$reference_file))  NULL else read_or_note(reference_input(),  "reference genotypes")
+    validation <- if (is.null(input$validation_file)) NULL else read_or_note(validation_input(), "validation genotypes")
+    ref_ids    <- if (is.null(input$ref_ids_file))    NULL else read_or_note(ref_ids_input(),    "Reference IDs file")
+
+    # Reference samples per line: found in the reference genotypes once uploaded
+    ref_label <- "Reference samples per line"
+    ref_value <- NA
+    if (!is.null(ref_ids) && length(ref_ids) > 0) {
+      n_line    <- if (is.null(reference)) lengths(ref_ids) else
+        vapply(ref_ids, function(x) sum(x %in% reference$ID), integer(1))
+      more      <- if (length(n_line) > 4) " / ..." else ""
+      ref_label <- paste0("Reference samples (", paste(utils::head(names(n_line), 4), collapse = " / "), more, ")")
+      ref_value <- paste0(paste(utils::head(n_line, 4), collapse = " / "), more)
+    }
+    tiles <- list()
+    tiles[["Reference lines"]]   <- if (is.null(ref_ids)) NA else length(ref_ids)
+    tiles[[ref_label]]           <- ref_value
+    tiles[["Samples to assign"]] <- if (is.null(validation)) NA else nrow(validation)
+    tiles[["Shared markers"]]    <- if (is.null(reference) || is.null(validation)) NA else
+      length(intersect(setdiff(names(reference), "ID"), setdiff(names(validation), "ID")))
+    summary_strip(tiles, if (length(notes) > 0) paste(notes, collapse = " "))
+  })
+
+  #  Uploading the reference genotypes, Reference IDs or validation genotypes
+  #  opens the Data Overview tab (NULL until a file is uploaded, so nothing
+  #  happens at start-up)
+  observeEvent(c(input$reference_file$datapath, input$ref_ids_file$datapath,
+                 input$validation_file$datapath), {
+    shiny::updateTabsetPanel(session, "polybreedtools_results_tabs", selected = "Data Overview")
+  })
+
   result_data <- reactiveVal(NULL)
   poly_items  <- reactiveValues(
     prediction        = NULL,   # numeric proportions, samples in rows
@@ -307,7 +393,7 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
 
   output$preview <- DT::renderDT({
     req(poly_items$pred_results)
-    DT::datatable(poly_items$pred_results, options = list(pageLength = 10, scrollX = TRUE))
+    results_datatable(poly_items$pred_results)
   })
   
   #  Run estimation
@@ -331,19 +417,30 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
         stop("Upload the .map file for the validation .ped.")
       }
 
-      reference      <- read_genotype_upload(input$reference_file, ploidy = input$ploidy, id_name = "ID",
-                                             map_input = ped_maps$reference)
-      counted_allele <- attr(reference, "counted_allele")   # NULL unless .ped
-      reference      <- dplyr::distinct(reference, ID, .keep_all = TRUE)
+      reference <- reference_input()
+      check_upload_ploidy(reference, input$reference_file, input$ploidy)
+      reference <- dplyr::distinct(reference, ID, .keep_all = TRUE)
       reference <- tibble::column_to_rownames(reference, "ID")
-      
-      reference_ids <- utils::read.table(input$ref_ids_file$datapath, header = TRUE, sep = "\t")
-      ref_ids       <- lapply(as.list(reference_ids), as.character)
-      
+
+      ref_ids <- ref_ids_input()
+
+      # A population without any of its IDs in the reference genotypes has no
+      #   allele frequencies, so stop here with the reason
+      n_found   <- vapply(ref_ids, function(x) sum(x %in% rownames(reference)), integer(1))
+      not_found <- names(n_found)[n_found == 0]
+      if (length(not_found) > 0) {
+        stop("None of the IDs listed under ", paste0("'", not_found, "'", collapse = ", "),
+             " in the Reference IDs file are in the Reference Genotypes.\n\n",
+             "The Reference IDs file needs one column per population: the header is the ",
+             "population name and the column lists its reference sample IDs (see Example Inputs). ",
+             "A file with one column of sample IDs and another of population names has to be ",
+             "rearranged to that layout.", call. = FALSE)
+      }
+      ids_missing <- setdiff(unlist(ref_ids, use.names = FALSE), rownames(reference))
+
       # Validation .ped is coded with the reference's counted allele per marker
-      validation_raw <- read_genotype_upload(input$validation_file, ploidy = input$ploidy, id_name = "ID",
-                                             counted_allele = counted_allele,
-                                             map_input = ped_maps$validation)
+      validation_raw <- validation_input()
+      check_upload_ploidy(validation_raw, input$validation_file, input$ploidy)
 
       # Markers are matched by name, so the two files must share some
       shared_markers <- intersect(setdiff(names(reference), "ID"),
@@ -367,6 +464,12 @@ mod_polybreedtools_server <- function(input, output, session, parent_session) {
       validation      <- validation_filtered[, c(TRUE, col_call_counts > 0), drop = FALSE]
       
       warning_messages <- c()
+      if (length(ids_missing) > 0) {
+        warning_messages <- c(warning_messages, paste(
+          "WARNING: The following Reference IDs are not in the Reference Genotypes and were not used:\n",
+          paste0("  • ", ids_missing, collapse = "\n")
+        ))
+      }
       if (length(removed_samples) > 0) {
         warning_messages <- c(warning_messages, paste(
           "WARNING: The following validation samples were removed due to genotyping rate < 50%:\n",

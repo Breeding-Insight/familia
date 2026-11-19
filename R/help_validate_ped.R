@@ -82,8 +82,7 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       using Mendelian error analysis. Each trio is classified as Pass, Fail, Low Markers,
       No Genotype Data, Founders, or Missing Parents. A Marker Summary table lists, for each
       marker, the trios tested, the trios with a Mendelian mismatch and the mismatch %
-      (worst first), to help spot problematic markers. A Marker Trio Table gives the status of every marker in every trio (match, mismatch_male, mismatch_female, mismatch_both, mismatch_combination, or missing_* naming each individual without a call). A corrected pedigree (the parents identified as faulty set to 0) and per-category
-      reports are bundled into a single .zip file for download. To fill in missing or removed parents, run the Find Parentage tab with the Fill in pedigree method on the corrected pedigree. The Example files link in the Inputs box downloads a small data set (the pedigree is the corrected pedigree from the Pedigree Cleaner example).",
+      (worst first), to help spot problematic markers. A Marker Trio Table gives the status of every marker in every trio (match, mismatch_male, mismatch_female, mismatch_both, mismatch_combination, or missing_* naming each individual without a call). The results come as one Excel file (every trio with its issue, one sheet per table and the run settings), and the validated pedigree (the parents identified as faulty set to 0) as a separate text file. To fill in missing or removed parents, run the Find Parentage tab with the Fill in pedigree method on the validated pedigree. The Example files link in the Inputs box downloads a small data set (the pedigree is the cleaned pedigree from the Pedigree Cleaner example).",
       style = "font-size: 13px;"
     ),
     shiny::hr(style = "margin: 8px 0;"),
@@ -118,9 +117,11 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       )),
       shiny::tags$li(shiny::HTML("<strong>Click Run Validation</strong> to evaluate all trios.")),
       shiny::tags$li(shiny::HTML(
-        "<strong>Review</strong> the Run Summary panel and the expandable tables in the Issue Tables tab."
+        "<strong>Review</strong> the Run Summary panel and the expandable tables in the Issue Tables tab.
+        A table's <em>Search</em> box finds the text in any column, ignoring case; to search one column,
+        type in the box under its header. In the Mendelian Error Plot, click a bar to list its trios."
       )),
-      shiny::tags$li(shiny::HTML("<strong>Export</strong> the corrected pedigree and reports as a .zip file."))
+      shiny::tags$li(shiny::HTML("<strong>Export</strong> the results (Excel) and the validated pedigree (.txt)."))
     ),
     shiny::hr(style = "margin: 8px 0;"),
     
@@ -220,12 +221,17 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Fail - trio inconsistent with Mendelian inheritance",
       body_content = shiny::tagList(
         shiny::p(
-          "The Mendelian error rate exceeds the trio error threshold, suggesting the recorded
-          parentage is incorrect or that significant genotyping errors exist. The
-          <code>recommended_correction</code> column names the parent(s) to remove: <code>remove_male_parent</code>,
-          <code>remove_female_parent</code>, <code>remove_both</code>, or <code>unresolved</code> when neither
-          parent fails the single-parent check (for example an individual recorded as its own parent),
-          in which case the pedigree is left unchanged for manual review.",
+          shiny::HTML(
+            "The Mendelian error rate exceeds the trio error threshold, suggesting the recorded
+            parentage is incorrect or that significant genotyping errors exist. The tables show a
+            <code>recommended_action</code> column naming the parent(s) to set to missing:
+            <em>Set male parent to missing</em>, <em>Set female parent to missing</em>,
+            <em>Set both parents to missing</em>, or <em>Unresolved</em> when neither parent fails the
+            single-parent check (for example an individual recorded as its own parent), in which case
+            the pedigree is left unchanged for review by hand. The downloads keep BIGpopA's codes
+            (<code>remove_male_parent</code>, <code>remove_female_parent</code>, <code>remove_both</code>,
+            <code>unresolved</code>) in the <code>recommended_correction</code> column."
+          ),
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -239,10 +245,13 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
       label        = "Low Markers - insufficient markers for reliable validation",
       body_content = shiny::tagList(
         shiny::p(
-          "Fewer testable markers than the Min Markers threshold were available for this trio.
-          The result is inconclusive and flagged for review. The recommended correction carries the
-          prefix <code>low_markers_</code> (for example <code>low_markers_remove_female_parent</code>) and is
-          applied to the corrected pedigree like the plain decision.",
+          shiny::HTML(
+            "Fewer testable markers than the Min Markers threshold were available for this trio.
+            The result is inconclusive and flagged for review. The recommended action starts with
+            <em>Low markers:</em> (code prefix <code>low_markers_</code>, for example
+            <code>low_markers_remove_female_parent</code>) and is applied to the validated pedigree
+            like the plain decision."
+          ),
           style = "margin-bottom: 6px;"
         ),
         shiny::tags$strong("Example:"),
@@ -304,13 +313,13 @@ help_content_validate_ped <- function(collapse_fn = NULL, id_prefix = "") {
               style = "font-weight: bold;"),
     shiny::tags$ul(
       style = "font-size: 13px;",
-      shiny::tags$li(shiny::HTML("<code>corrected_pedigree.txt</code> - the validated pedigree, tab-separated.")),
-      shiny::tags$li(shiny::HTML("<code>full_results.txt</code> - all trio results combined, tab-separated.")),
-      shiny::tags$li(shiny::HTML("One .txt report per result category (only included if records exist):
-        <code>pass.txt</code>, <code>fail.txt</code>, <code>low_markers.txt</code>,
-        <code>no_genotype_data.txt</code>, <code>founders.txt</code>,
-        <code>missing_parents.txt</code>.")),
-      shiny::tags$li(shiny::HTML("<code>marker_summary.txt</code> - per-marker trios tested, mismatches and mismatch %."))
+      shiny::tags$li(shiny::HTML("<strong>Download Results (Excel)</strong> - one workbook: <em>All Trios</em>
+        (every trio with an <code>issue</code> column, e.g. <em>fail: trio error 41.67% &gt; 5%</em>, and the
+        recommended action in plain language next to BIGpopA's code), one sheet per result category
+        (Pass, Fail, Low Markers, No Genotype Data, Founders, Missing Parents), the Marker Summary,
+        the Marker Trio Table and a <em>Settings</em> sheet with the parameters of the run.")),
+      shiny::tags$li(shiny::HTML("<strong>Download Validated Pedigree (.txt)</strong> - <code>pedigree_validated.txt</code>,
+        tab-separated, with the recommended parents set to 0; the input of Find Parentage &gt; Fill in pedigree."))
     )
   )
 }

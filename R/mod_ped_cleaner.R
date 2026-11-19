@@ -40,7 +40,7 @@ mod_ped_cleaner_ui <- function(id) {
   shiny::tagList(
     shinyjs::useShinyjs(),
     shiny::fluidRow(
-      
+
       # Column 1: Inputs
       shiny::column(
         width = 3,
@@ -63,17 +63,17 @@ mod_ped_cleaner_ui <- function(id) {
           ),
           shiny::hr(),
           shiny::p(
-            "Correction options:",
+            "Options:",
             style = "color: #6c757d; font-size: 12px; margin-bottom: 5px;"
           ),
           shiny::checkboxInput(
             ns("correct_conflicting_trios"),
-            "Correct conflicting trios",
+            "Set conflicting parents to missing (0)",
             value = TRUE
           ),
           shiny::checkboxInput(
             ns("correct_inconsistent_sex_roles"),
-            "Correct inconsistent sex roles",
+            "Set parents with inconsistent sex roles to missing (0)",
             value = TRUE
           ),
           shiny::hr(),
@@ -85,7 +85,14 @@ mod_ped_cleaner_ui <- function(id) {
           shinyjs::disabled(
             shiny::downloadButton(
               ns("download_results"),
-              "Download Results"
+              "Download Results (Excel)"
+            )
+          ),
+          shiny::div(style = "height: 8px;"),
+          shinyjs::disabled(
+            shiny::downloadButton(
+              ns("download_pedigree"),
+              "Download Cleaned Pedigree (.txt)"
             )
           ),
           shiny::hr(),
@@ -99,7 +106,7 @@ mod_ped_cleaner_ui <- function(id) {
           )
         )  # closes box
       ),  # closes column(width = 3)
-      
+
       # Column 2: Results
       shiny::column(
         width = 6,
@@ -120,21 +127,27 @@ mod_ped_cleaner_ui <- function(id) {
                   <ul>
                     <li>Upload a tab-separated <code>.txt</code> or <code>.tsv</code> pedigree file, or a comma-separated <code>.csv</code> pedigree file.</li>
                     <li>Required columns: <code>id</code>, <code>male_parent</code>, <code>female_parent</code>.</li>
-                    <li>Select correction options, then click <strong>Run Pedigree Check</strong> to detect issues.</li>
+                    <li>The <strong>Data Overview</strong> tab opens when the pedigree is uploaded and counts its records, ids and trios.</li>
+                    <li>Choose the options, then click <strong>Run Pedigree Check</strong> to detect issues.</li>
                     <li>A run summary will appear in the panel on the right after the check completes.</li>
                     <li>Issues detected:</li>
                     <ul>
-                      <li><strong>Exact Duplicates</strong> - fully identical rows are always removed.</li>
-                      <li><strong>Conflicting Trios</strong> - same ID with different parents; corrected when option is checked.</li>
-                      <li><strong>Inconsistent Sex Roles</strong> - individual appears as both male and female parent; corrected when option is checked.</li>
-                      <li><strong>Missing Parents</strong> - referenced parents always added with unknown parents (0).</li>
-                      <li><strong>Cycles / Dependencies</strong> - circular relationships are flagged and must be resolved manually.</li>
+                      <li><strong>Exact Duplicates</strong> - fully identical rows; the extra copies are always removed.</li>
+                      <li><strong>Conflicting Trios</strong> - same ID with different parents; the disagreeing parents are set to missing (0) when the option is checked. To keep one of the rows instead, check its <strong>Keep</strong> box in the table and click <strong>Apply selection</strong>.</li>
+                      <li><strong>Inconsistent Sex Roles</strong> - individual appears as both male and female parent; set to missing (0) when the option is checked.</li>
+                      <li><strong>Missing Parents</strong> - parents without a row of their own are always added with unknown parents (0).</li>
+                      <li><strong>Cycles / Dependencies</strong> - circular relationships are flagged and must be fixed by hand.</li>
                     </ul>
-                    <li>Review results in the <strong>Issue Tables</strong> tab, then export.</li>
+                    <li>Review results in the <strong>Issue Tables</strong> tab. <strong>Download Results</strong> gives one Excel file with every record and its issue, one sheet per table and the run settings; <strong>Download Cleaned Pedigree</strong> gives the pedigree for Validate Pedigree.</li>
                   </ul>
                 ')))
               ),
               style = "overflow-y: auto; height: 550px"
+            ),
+            shiny::tabPanel(
+              "Data Overview",
+              shiny::uiOutput(ns("dashboard")),   # summary tiles, filled in when the pedigree is uploaded
+              style = "overflow-y: auto; height: 550px; padding: 10px;"
             ),
             shiny::tabPanel(
               "Issue Tables",
@@ -144,7 +157,7 @@ mod_ped_cleaner_ui <- function(id) {
           )
         )  # closes box
       ),  # closes column(width = 6)
-      
+
       # Column 3: Status + Summary
       shiny::column(
         width = 3,
@@ -184,8 +197,9 @@ mod_ped_cleaner_ui <- function(id) {
 #' @noRd
 mod_ped_cleaner_server <- function(id, parent_session) {
   shiny::moduleServer(id, function(input, output, session) {
-    
-    check_results <- shiny::reactiveVal(NULL)
+
+    check_results <- shiny::reactiveVal(NULL)   # uploaded pedigree, reports and options of the run
+    kept_rows     <- shiny::reactiveVal(NULL)   # conflicting rows kept by the user
 
     # Example files
     output$download_examples <- example_download_handler(example_files$ped_cleaner)
@@ -202,31 +216,61 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         )
       )
     })
-    
+
+    # Uploaded pedigree, read once for the summary tiles and the run
+    ped_input <- shiny::reactive({
+      shiny::req(input$ped_file)
+      read_table_upload(input$ped_file)
+    })
+
+    # Summary tiles (Data Overview tab)
+    output$dashboard <- shiny::renderUI({
+      empty <- list("Records" = NA, "Unique IDs" = NA, "Complete trios" = NA,
+                    "One parent known" = NA, "Both parents unknown" = NA)
+      if (is.null(input$ped_file)) return(summary_strip(empty))
+      ped <- tryCatch(ped_input(), error = function(e) e)
+      if (inherits(ped, "error")) {
+        return(summary_strip(empty, paste("Could not read the pedigree file:", conditionMessage(ped))))
+      }
+      counts <- pedigree_counts(ped)
+      if (is.null(counts)) {
+        return(summary_strip(empty, "The pedigree file needs id, male_parent and female_parent columns."))
+      }
+      summary_strip(counts)
+    })
+
+    # Uploading the pedigree opens the Data Overview tab
+    shiny::observeEvent(input$ped_file, {
+      shiny::updateTabsetPanel(session, "ped_results_tabs", selected = "Data Overview")
+    })
+
+    # check_ped() with the options of the run
+    check_pedigree <- function(ped, set_conflicts, set_sex) {
+      BIGpopA::check_ped(
+        ped.file                       = ped,
+        verbose                        = FALSE,
+        correct_conflicting_trios      = set_conflicts,
+        correct_inconsistent_sex_roles = set_sex
+      )
+    }
+
     # Run check
     shiny::observeEvent(input$run_check, {
       shiny::req(input$ped_file)
       check_results(NULL)
+      kept_rows(NULL)
       shinyjs::disable("download_results")
-      
+      shinyjs::disable("download_pedigree")
+
       tryCatch({
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_ped",
           value = 10, status = "info",
           title = "Reading pedigree file..."
         )
-        
-        tmp_path <- input$ped_file$datapath
-        file_ext <- tolower(tools::file_ext(input$ped_file$name))
-        
-        ped_raw <- if (file_ext == "csv") {
-          utils::read.csv(tmp_path, header = TRUE,
-                          stringsAsFactors = FALSE, check.names = FALSE)
-        } else {
-          utils::read.table(tmp_path, header = TRUE, sep = "\t",
-                            stringsAsFactors = FALSE, check.names = FALSE)
-        }
-        
+
+        ped_raw <- ped_input()
+
         # Column names are matched ignoring case, spaces and dots (as in BIGpopA)
         required_cols <- c("id", "male_parent", "female_parent")
         norm_cols     <- gsub("[ .-]+", "_", tolower(trimws(colnames(ped_raw))))
@@ -238,56 +282,36 @@ mod_ped_cleaner_server <- function(id, parent_session) {
             ". File must contain: id, male_parent, female_parent."
           ))
         }
-        
-        shinyWidgets::updateProgressBar(
-          session = session, id = "pb_ped",
-          value = 30, status = "info",
-          title = "Checking for duplicate records..."
-        )
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_ped",
           value = 50, status = "info",
-          title = "Checking for conflicting trios and inconsistent sex roles..."
+          title = "Checking duplicates, conflicting trios, sex roles, missing parents and cycles..."
         )
-        shinyWidgets::updateProgressBar(
-          session = session, id = "pb_ped",
-          value = 70, status = "info",
-          title = "Checking for missing parents..."
-        )
-        shinyWidgets::updateProgressBar(
-          session = session, id = "pb_ped",
-          value = 85, status = "info",
-          title = "Detecting cycles and dependencies..."
-        )
-        
-        report <- BIGpopA::check_ped(
-          ped.file                       = ped_raw,
-          verbose                        = FALSE,
-          correct_conflicting_trios      = input$correct_conflicting_trios,
-          correct_inconsistent_sex_roles = input$correct_inconsistent_sex_roles
-        )
-        
-        corrected_ped <- tryCatch(
-          report$corrected_pedigree,
-          error = function(e) NULL
-        )
-        
+
+        set_conflicts <- isTRUE(input$correct_conflicting_trios)
+        set_sex       <- isTRUE(input$correct_inconsistent_sex_roles)
+        report        <- check_pedigree(ped_raw, set_conflicts, set_sex)
+
         check_results(list(
-          report                         = report,
-          corrected_ped                  = corrected_ped,
-          correct_conflicting_trios      = input$correct_conflicting_trios,
-          correct_inconsistent_sex_roles = input$correct_inconsistent_sex_roles
+          ped_input     = ped_raw,          # uploaded pedigree, edited when rows are kept
+          base_report   = report,           # run on the uploaded pedigree (every conflict)
+          report        = report,           # current report, after the kept rows
+          set_conflicts = set_conflicts,
+          set_sex       = set_sex,
+          file_name     = input$ped_file$name
         ))
-        
+
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_ped",
           value = 100, status = "success",
           title = "Finished"
         )
         shinyjs::enable("download_results")
-        
+        shinyjs::enable("download_pedigree")
+
         shiny::updateTabsetPanel(session, "ped_results_tabs", selected = "Issue Tables")
-        
+
       }, error = function(e) {
         shinyWidgets::updateProgressBar(
           session = session, id = "pb_ped",
@@ -296,64 +320,127 @@ mod_ped_cleaner_server <- function(id, parent_session) {
         )
       })
     })
-    
+
+    # Keep a conflicting trio: drop the other rows of its id from the uploaded
+    # pedigree and run check_ped() again with the same options, so the missing
+    # parents, sex roles and cycles are recomputed with the kept parents
+    apply_kept <- function(kept) {
+      res <- check_results()
+      shiny::req(res)
+      if (is.null(kept) || nrow(kept) == 0) {
+        kept_rows(NULL)
+        res$report <- res$base_report
+      } else {
+        ped      <- res$ped_input
+        cols     <- pedigree_columns(ped)
+        p_id     <- as.character(ped[[cols[["id"]]]])
+        row_key  <- paste(p_id, ped[[cols[["male_parent"]]]], ped[[cols[["female_parent"]]]], sep = "\r")
+        kept_key <- paste(kept$id, kept$male_parent, kept$female_parent, sep = "\r")
+        drop     <- p_id %in% kept$id & !row_key %in% kept_key
+        report   <- tryCatch(check_pedigree(ped[!drop, , drop = FALSE], res$set_conflicts, res$set_sex),
+                             error = function(e) e)
+        if (inherits(report, "error")) {
+          shiny::showNotification(paste("Could not apply the selection:", conditionMessage(report)),
+                                  type = "error", duration = 10)
+          return(invisible(NULL))
+        }
+        kept_rows(kept)
+        res$report <- report
+      }
+      check_results(res)
+    }
+
+    shiny::observeEvent(input$apply_keep, {
+      res <- check_results()
+      shiny::req(res)
+      conflicts <- as.data.frame(res$base_report$conflicting_trios)
+      selected  <- conflicts[input$tbl_conflicting_trios_rows_selected,
+                             c("id", "male_parent", "female_parent"), drop = FALSE]
+      dup_ids   <- unique(selected$id[duplicated(selected$id)])
+      if (length(dup_ids) > 0) {
+        shiny::showNotification(
+          paste0("Keep at most one row per id. More than one row is checked for: ",
+                 paste(dup_ids, collapse = ", "), ". Nothing was applied."),
+          type = "error", duration = 10
+        )
+        return()
+      }
+      apply_kept(selected)
+    })
+
+    shiny::observeEvent(input$reset_keep, {
+      apply_kept(NULL)
+    })
+
     # Summary banner
     output$summary_banner <- shiny::renderUI({
       shiny::req(check_results())
-      report     <- check_results()$report
-      do_trios   <- check_results()$correct_conflicting_trios
-      do_sex     <- check_results()$correct_inconsistent_sex_roles
-      
+      res        <- check_results()
+      report     <- res$report
+      do_trios   <- res$set_conflicts
+      do_sex     <- res$set_sex
+      kept       <- kept_rows()
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df)) 0L else nrow(df)
       n_dupes    <- get_count(report$exact_duplicates)
-      n_conflict <- get_count(report$conflicting_trios)
+      n_conflict <- length(unique(as.data.frame(res$base_report$conflicting_trios)$id))
+      n_kept     <- if (is.null(kept)) 0L else nrow(kept)
       n_messy    <- get_count(report$inconsistent_sex_roles)
       n_missing  <- get_count(report$missing_parents)
       n_cycles   <- get_count(report$dependencies)
       total      <- n_dupes + n_conflict + n_messy + n_missing + n_cycles
-      
+
       banner_color <- if (total == 0) "#d4edda" else "#fff3cd"
       border_color <- if (total == 0) "#c3e6cb" else "#ffeeba"
       text_color   <- if (total == 0) "#155724"  else "#856404"
       headline     <- if (total == 0) "No issues found. Pedigree looks clean!" else
         paste0(total, " issue(s) detected. Review the Issue Tables tab.")
-      
-      correction_msg <- if (do_trios && do_sex) {
-        "Exact duplicates and missing parents always corrected. Conflicting trios and inconsistent sex roles will also be corrected for this run (check help for details)."
+
+      conflict_msg <- paste0(
+        n_conflict, " id(s)",
+        if (n_conflict > 0) paste0(" (", n_kept, " kept by you, ", n_conflict - n_kept,
+                                   if (do_trios) " set to missing)" else " flagged)") else ""
+      )
+
+      options_msg <- if (do_trios && do_sex) {
+        "Exact duplicates are always removed and missing parents always added. Conflicting parents and parents with inconsistent sex roles were also set to missing (0) in this run (check help for details)."
       } else if (do_trios && !do_sex) {
-        "Exact duplicates and missing parents always corrected. Only conflicting trios will also be corrected for this run (check help for details)."
+        "Exact duplicates are always removed and missing parents always added. Conflicting parents were also set to missing (0) in this run; inconsistent sex roles are only flagged (check help for details)."
       } else if (!do_trios && do_sex) {
-        "Exact duplicates and missing parents always corrected. Only inconsistent sex roles will also be corrected for this run (check help for details)."
+        "Exact duplicates are always removed and missing parents always added. Parents with inconsistent sex roles were also set to missing (0) in this run; conflicting trios are only flagged (check help for details)."
       } else {
-        "Only exact duplicates and missing parents will be corrected for this run (check help for details)."
+        "Only exact duplicates were removed and missing parents added in this run; the other issues are only flagged (check help for details)."
       }
-      
+
       shiny::HTML(paste0(
         "<div style='background-color:", banner_color, "; border: 1px solid ", border_color,
         "; padding: 12px; border-radius: 6px; margin-bottom: 12px;'>",
         "<p style='color:", text_color, "; margin: 0; font-weight: bold; font-size: 14px;'>",
         headline, "</p>",
         "<p style='color:", text_color, "; margin: 6px 0 0 0; font-size: 12px;'>",
-        "- Exact duplicates removed: <strong>", n_dupes, "</strong> &nbsp;",
-        "- Conflicting trios detected/resolved: <strong>", n_conflict, "</strong> &nbsp;",
-        "- Inconsistent sex roles detected/resolved: <strong>", n_messy, "</strong> &nbsp;",
-        "- Missing parents added: <strong>", n_missing, "</strong> &nbsp;",
-        "- Cycles detected: <strong>", n_cycles, "</strong>",
+        "- Exact duplicates: <strong>", n_dupes, "</strong> &nbsp;",
+        "- Conflicting trios: <strong>", conflict_msg, "</strong> &nbsp;",
+        "- Inconsistent sex roles: <strong>", n_messy, "</strong> &nbsp;",
+        "- Missing parents: <strong>", n_missing, "</strong> &nbsp;",
+        "- Cycles / dependencies: <strong>", n_cycles, "</strong>",
         "</p>",
         "<p style='color:", text_color, "; margin: 8px 0 0 0; font-size: 11px; font-style: italic;'>",
-        correction_msg,
+        options_msg,
         "</p></div>"
       ))
     })
-    
+
     # Results UI
     output$results_ui <- shiny::renderUI({
       shiny::req(check_results())
-      report <- check_results()$report
-      
+      res       <- check_results()
+      report    <- res$report
+      conflicts <- as.data.frame(res$base_report$conflicting_trios)   # every conflict, kept or not
+      kept      <- kept_rows()
+
       get_count <- function(df) if (is.null(df) || !is.data.frame(df)) 0L else nrow(df)
-      
-      make_section <- function(title, icon_name, df, color_hex) {
+
+      make_section <- function(title, icon_name, df, color_hex, extra = NULL) {
         n      <- get_count(df)
         tbl_id <- paste0("tbl_", sanitize_id(title))
         bs4Dash::box(
@@ -371,86 +458,120 @@ mod_ped_cleaner_server <- function(id, parent_session) {
           status      = if (n == 0) "success" else "warning",
           style       = paste0("border-left: 4px solid ", color_hex, ";"),
           if (n > 0) {
-            DT::DTOutput(session$ns(tbl_id))
+            shiny::tagList(extra, DT::DTOutput(session$ns(tbl_id)))
           } else {
             shiny::p("No records found.", style = "color: #28a745; margin: 0;")
           }
         )
       }
-      
+
       render_if <- function(title, df) {
         output_id <- paste0("tbl_", sanitize_id(title))
         if (!is.null(df) && is.data.frame(df) && nrow(df) > 0) {
           output[[output_id]] <- DT::renderDT({
-            DT::datatable(df,
-                          rownames = FALSE,
-                          options  = list(pageLength = 10, scrollX = TRUE),
-                          class    = "table-bordered table-sm")
+            results_datatable(df)
           })
         }
       }
-      
-      render_if("Exact Duplicates Removed",       report$exact_duplicates)
-      render_if("Conflicting Trios Resolved",      report$conflicting_trios)
-      render_if("Inconsistent Sex Roles",          report$inconsistent_sex_roles)
-      render_if("Missing Parents Added",           report$missing_parents)
-      render_if("Cycles / Dependencies Detected",  report$dependencies)
-      
+
+      render_if("Exact Duplicates",       report$exact_duplicates)
+      render_if("Inconsistent Sex Roles", report$inconsistent_sex_roles)
+      render_if("Missing Parents",        report$missing_parents)
+      render_if("Cycles / Dependencies",  report$dependencies)
+
+      # Conflicting trios: a Keep box per row (row selection), kept rows pre-checked
+      if (nrow(conflicts) > 0) {
+        conflict_key <- paste(conflicts$id, conflicts$male_parent, conflicts$female_parent, sep = "\r")
+        kept_key     <- if (is.null(kept)) character(0) else
+          paste(kept$id, kept$male_parent, kept$female_parent, sep = "\r")
+        output$tbl_conflicting_trios <- DT::renderDT({
+          results_datatable(
+            cbind(Keep = "", conflicts),
+            selection = list(mode = "multiple", selected = which(conflict_key %in% kept_key)),
+            options   = list(columnDefs = list(list(targets = 0, className = "keep-cell",
+                                                    orderable = FALSE, searchable = FALSE)))
+          )
+        })
+      }
+      keep_controls <- shiny::tagList(
+        shiny::p(
+          "To keep one row of an id as entered, check its Keep box (at most one per id) and click Apply selection. ",
+          "Ids without a checked row are ", if (res$set_conflicts) "set to missing (0)." else "only flagged.",
+          style = "font-size: 12px; color: #6c757d; margin-bottom: 6px;"
+        ),
+        shiny::actionButton(session$ns("apply_keep"), "Apply selection", icon = shiny::icon("check"),
+                            class = "btn-sm"),
+        shiny::actionButton(session$ns("reset_keep"), "Reset", icon = shiny::icon("rotate-left"),
+                            class = "btn-sm"),
+        shiny::div(style = "height: 8px;")
+      )
+
       shiny::tagList(
         shiny::h5(
           shiny::tagList(shiny::icon("list-check"), " Check Results"),
           style = "font-weight: bold; margin-bottom: 10px;"
         ),
-        make_section("Exact Duplicates Removed",      "copy",        report$exact_duplicates,       "#6c757d"),
-        make_section("Conflicting Trios Resolved",     "exclamation", report$conflicting_trios,      "#856404"),
-        make_section("Inconsistent Sex Roles",         "shuffle",     report$inconsistent_sex_roles, "#856404"),
-        make_section("Missing Parents Added",          "user-plus",   report$missing_parents,        "#0c5460"),
-        make_section("Cycles / Dependencies Detected", "rotate",      report$dependencies,           "#721c24")
+        make_section("Exact Duplicates",       "copy",        report$exact_duplicates,       "#6c757d"),
+        make_section("Conflicting Trios",      "exclamation", conflicts,                     "#856404",
+                     extra = keep_controls),
+        make_section("Inconsistent Sex Roles", "shuffle",     report$inconsistent_sex_roles, "#856404"),
+        make_section("Missing Parents",        "user-plus",   report$missing_parents,        "#0c5460"),
+        make_section("Cycles / Dependencies",  "rotate",      report$dependencies,           "#721c24")
       )
     })
-    
-    # Download
+
+    # Download: one Excel workbook with every record and its issue, one sheet
+    # per table, the rows kept by the user and the run settings
     output$download_results <- shiny::downloadHandler(
       filename = function() {
-        paste0("pedigree_check_", Sys.Date(), ".zip")
+        paste0("pedigree_check_results_", Sys.Date(), ".xlsx")
       },
       content = function(file) {
         shiny::req(check_results())
-        results <- check_results()
-        report  <- results$report
-        tmp_dir <- tempfile("ped_export")
-        dir.create(tmp_dir)
-        on.exit(unlink(tmp_dir, recursive = TRUE), add = TRUE)
-        
-        if (!is.null(results$corrected_ped)) {
-          write.table(results$corrected_ped,
-                      file.path(tmp_dir, "corrected_pedigree.txt"),
-                      sep = "\t", row.names = FALSE, quote = FALSE)
+        res       <- check_results()
+        report    <- res$report
+        kept      <- kept_rows()
+        conflicts <- as.data.frame(res$base_report$conflicting_trios)
+        if (nrow(conflicts) > 0) {
+          kept_key <- if (is.null(kept)) character(0) else
+            paste(kept$id, kept$male_parent, kept$female_parent, sep = "\r")
+          conflicts$kept_by_user <- paste(conflicts$id, conflicts$male_parent,
+                                          conflicts$female_parent, sep = "\r") %in% kept_key
         }
-        
-        sections <- list(
-          exact_duplicates       = report$exact_duplicates,
-          conflicting_trios      = report$conflicting_trios,
-          inconsistent_sex_roles = report$inconsistent_sex_roles,
-          missing_parents        = report$missing_parents,
-          dependencies           = report$dependencies
-        )
-        
-        for (nm in names(sections)) {
-          df <- sections[[nm]]
-          if (!is.null(df) && is.data.frame(df) && nrow(df) > 0) {
-            write.table(df,
-                        file.path(tmp_dir, paste0(nm, ".txt")),
-                        sep = "\t", row.names = FALSE, quote = FALSE)
-          }
-        }
-        
-        tsv_files <- list.files(tmp_dir)
-        zip::zip(zipfile = file, files = tsv_files, root = tmp_dir)
-        unlink(tmp_dir, recursive = TRUE)
-      },
-      contentType = "application/zip"
+
+        write_results_xlsx(list(
+          "All Records"            = cleaner_records(res$ped_input, report,
+                                                     conflicts     = res$base_report$conflicting_trios,
+                                                     kept          = kept,
+                                                     set_conflicts = res$set_conflicts,
+                                                     set_sex       = res$set_sex),
+          "Exact Duplicates"       = report$exact_duplicates,
+          "Conflicting Trios"      = conflicts,
+          "Inconsistent Sex Roles" = report$inconsistent_sex_roles,
+          "Missing Parents"        = report$missing_parents,
+          "Cycles - Dependencies"  = report$dependencies,
+          "Settings"               = settings_table(
+            "Tab"                                       = "Pedigree Cleaner",
+            "Pedigree file"                             = res$file_name,
+            "Set conflicting parents to missing (0)"    = res$set_conflicts,
+            "Set inconsistent sex roles to missing (0)" = res$set_sex,
+            "Rows kept by user (id: male x female)"     = if (is.null(kept)) "none" else
+              paste0(kept$id, ": ", kept$male_parent, " x ", kept$female_parent),
+            "Always applied"                            = "exact duplicates removed; missing parents added with unknown parents (0)"
+          )
+        ), file)
+      }
     )
-    
+
+    # Download: the cleaned pedigree, the input of Validate Pedigree
+    output$download_pedigree <- shiny::downloadHandler(
+      filename = function() "pedigree_cleaned.txt",
+      content  = function(file) {
+        shiny::req(check_results())
+        utils::write.table(as.data.frame(check_results()$report$corrected_pedigree), file,
+                           sep = "\t", row.names = FALSE, quote = FALSE)
+      }
+    )
+
   })
 }
